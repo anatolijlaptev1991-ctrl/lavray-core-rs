@@ -1,0 +1,19 @@
+[package]
+name = "lavray-proto"
+description = "LAVRay API contract: prost/tonic types and services from proto/lavray.proto"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+prost.workspace = true
+tonic.workspace = true
+
+[build-dependencies]
+tonic-build.workspace = true
+
+[lints]
+workspace = true
