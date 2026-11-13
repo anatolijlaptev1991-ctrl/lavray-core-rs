@@ -7,14 +7,35 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 /// Вид группы (proto Group.Kind); смена после создания запрещена (FR-UI-109).
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+/// В JSON — число 1/2 (паритет Go `model.GroupKind int`, P2-12 аудита):
+/// канонический JSON группы совместим с Go для backup/API.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum GroupKind {
     /// Обычная группа (proto = 1).
     #[default]
     Basic,
     /// Группа-подписка (proto = 2).
     Subscription,
+}
+
+impl Serialize for GroupKind {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_i64(match self {
+            Self::Basic => 1,
+            Self::Subscription => 2,
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for GroupKind {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let v = i64::deserialize(deserializer)?;
+        Ok(if v == 2 {
+            Self::Subscription
+        } else {
+            Self::Basic
+        })
+    }
 }
 
 /// Информация подписки (FR-UI-127).

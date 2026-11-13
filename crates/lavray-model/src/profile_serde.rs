@@ -33,7 +33,8 @@ struct ProfileRepr {
     manual: bool,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     geo: String,
-    #[serde(default, skip_serializing_if = "is_default_test")]
+    // Go `test_result,omitempty`: omitempty НЕ опускает структуры → всегда {}.
+    #[serde(default)]
     test_result: TestResult,
     #[serde(default)]
     traffic: TrafficCounters,
@@ -49,10 +50,6 @@ struct ProfileRepr {
     created_at_ms: i64,
     #[serde(default, skip_serializing_if = "is_zero_i64")]
     updated_at_ms: i64,
-}
-
-fn is_default_test(t: &TestResult) -> bool {
-    *t == TestResult::default()
 }
 
 #[allow(clippy::trivially_copy_pass_by_ref)] // serde skip_serializing_if требует &i64

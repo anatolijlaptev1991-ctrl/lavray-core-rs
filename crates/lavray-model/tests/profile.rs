@@ -141,12 +141,20 @@ fn omitempty_fields_skipped() {
 }
 
 #[test]
-fn group_kind_snake_case() {
-    assert_eq!(serde_json::to_value(GroupKind::Basic).unwrap(), "basic");
-    assert_eq!(
-        serde_json::to_value(GroupKind::Subscription).unwrap(),
-        "subscription"
-    );
+fn group_kind_numeric() {
+    // Паритет Go model.GroupKind int (P2-12): JSON — число 1/2.
+    assert_eq!(serde_json::to_value(GroupKind::Basic).unwrap(), 1);
+    assert_eq!(serde_json::to_value(GroupKind::Subscription).unwrap(), 2);
+    let back: GroupKind = serde_json::from_value(serde_json::json!(2)).unwrap();
+    assert_eq!(back, GroupKind::Subscription);
+}
+
+#[test]
+fn test_result_always_emitted() {
+    // Go test_result,omitempty не опускает структуры → всегда {} (P2-13).
+    let p = Profile::default();
+    let v = serde_json::to_value(&p).unwrap();
+    assert_eq!(v.get("test_result"), Some(&serde_json::json!({})));
 }
 
 #[test]
