@@ -1,4 +1,12 @@
 {
+  "crates/lavray-links/src/lib.rs": 59,
+  "crates/lavray-links/src/quic.rs": 69,
+  "crates/lavray-links/src/socks_http.rs": 37,
+  "crates/lavray-links/src/ss.rs": 138,
+  "crates/lavray-links/src/trojan_vless.rs": 37,
+  "crates/lavray-links/src/util.rs": 113,
+  "crates/lavray-links/src/vmess.rs": 125,
+  "crates/lavray-links/tests/parse.rs": 224,
   "crates/lavray-model/src/detail.rs": 195,
   "crates/lavray-model/src/group.rs": 114,
   "crates/lavray-model/src/lib.rs": 19,

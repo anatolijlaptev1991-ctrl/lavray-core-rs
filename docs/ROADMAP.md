@@ -19,18 +19,23 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
 - [x] Валидация SCHEMA §4 (пути полей, анти-инъекция процессных правил).
 - [x] 5 builtin-наборов (embed), lav-ru rev3.
 - [x] 46 тестов, clippy 0, fmt.
-- [ ] Суб-агент аудит волны 1.
+- [x] Суб-агент аудит волны 1 (P1=0, P2→0: гард builtin, IgnoredAny; +16 тестов).
 
-## Волна 2 — lavray-model
+## Волна 2 — lavray-model ✅ (частично)
 
-- [ ] Profile/Group/Settings/geo, canonjson, dedupkey, customhash.
-- [ ] Тесты (паритет Go `model`).
+- [x] Profile (13 типов) + Detail (9 bean-структур), кастомный JSON detail по type.
+- [x] Group/SubscriptionInfo/GroupKind, TestResult/TrafficCounters.
+- [x] 14 тестов, clippy 0. VMess/Vless явный rename (snake_case → v_mess).
+- [ ] Settings/geo, canonjson, dedupkey, customhash (подволна 2b).
+- [ ] Суб-агент аудит волны 2.
 
-## Волна 3 — lavray-links
+## Волна 3 — lavray-links ✅ (парсинг)
 
-- [ ] Парсинг прокси-ссылок: vmess/vless/trojan/ss/hysteria2/tuic/anytls.
-- [ ] Экспорт ссылок, QR-payload.
-- [ ] Тесты + fuzz (паритет Go `links`).
+- [x] Парсинг: vmess (base64 JSON + URL), vless/trojan, ss (SIP002 + v2rayN),
+      hysteria2, tuic, socks/http. 25 тестов, clippy 0.
+- [ ] Экспорт ссылок (BuildLink), QR-payload, nekoray/happ.
+- [ ] Stream-настройки (ws/grpc/tls/reality), fuzz.
+- [ ] Суб-агент аудит волны 3.
 
 ## Волна 4 — lavray-store
 
