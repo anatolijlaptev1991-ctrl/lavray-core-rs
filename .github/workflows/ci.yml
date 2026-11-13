@@ -1,0 +1,54 @@
+# CI LAVRay Core (Rust) — те же стандарты, что и Linux-сборка:
+# fmt + clippy pedantic+perf (ноль предупреждений) + тесты + сборка release.
+# Трещотка размеров: новые файлы ≤200 строк, большие не растут.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: "fmt + clippy + tests"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: "fmt"
+        run: cargo fmt --check
+
+      - name: "clippy pedantic + perf (ноль предупреждений)"
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: "tests"
+        run: cargo test --workspace
+
+      - name: "release build"
+        run: cargo build --workspace --release
+
+  ratchet:
+    name: "трещотка размеров"
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: "size ratchet"
+        run: python scripts/size_ratchet.py

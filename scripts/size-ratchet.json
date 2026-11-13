@@ -1,0 +1,11 @@
+{
+  "crates/lavray-presets/src/builtin.rs": 47,
+  "crates/lavray-presets/src/lib.rs": 35,
+  "crates/lavray-presets/src/limits.rs": 32,
+  "crates/lavray-presets/src/localized.rs": 106,
+  "crates/lavray-presets/src/types.rs": 136,
+  "crates/lavray-presets/src/validate.rs": 199,
+  "crates/lavray-presets/tests/builtin.rs": 105,
+  "crates/lavray-presets/tests/localized.rs": 72,
+  "crates/lavray-presets/tests/validation.rs": 255
+}
