@@ -111,10 +111,28 @@ fn non_empty_stringish(v: &Value) -> bool {
     }
 }
 
-/// Регистронезависимое сравнение (ASCII + Unicode lowercase; паритет EqualFold
-/// для практических ASCII-ключей sing-box).
+/// Регистронезависимое сравнение по Unicode simple fold (паритет Go
+/// strings.EqualFold, как декодер sing-box): ſ→s, K→k и т.п. — чтобы
+/// Unicode-эквиваленты ключей-путей не обходили запрет.
 fn eq_fold(a: &str, b: &str) -> bool {
-    a.to_lowercase() == b.to_lowercase()
+    let mut ai = a.chars().map(simple_fold);
+    let mut bi = b.chars().map(simple_fold);
+    loop {
+        match (ai.next(), bi.next()) {
+            (Some(x), Some(y)) if x == y => {}
+            (None, None) => return true,
+            _ => return false,
+        }
+    }
+}
+
+/// Simple fold одного символа (1:1): long s → s, иначе lowercase.
+fn simple_fold(c: char) -> char {
+    if c == '\u{017F}' {
+        's'
+    } else {
+        c.to_lowercase().next().unwrap_or(c)
+    }
 }
 
 /// s оканчивается на suffix без учёта регистра (по символам).

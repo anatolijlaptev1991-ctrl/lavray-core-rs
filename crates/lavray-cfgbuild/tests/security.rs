@@ -83,3 +83,15 @@ fn allows_inline_certificate() {
     let v = json!({ "tls": { "certificate": "-----BEGIN CERTIFICATE-----" } });
     assert!(reject_file_keys("", &v).is_ok());
 }
+
+#[test]
+fn rejects_unicode_fold_path_key() {
+    // Unicode simple fold (паритет Go EqualFold / декодер sing-box): long s (ſ)
+    // в «certificate_path» не должен обходить запрет путей.
+    let v = json!({ "tls": { "certificate_path": "/etc/secret.pem" } });
+    assert!(reject_file_keys("", &v).is_err());
+    // Kelvin sign (K) в «_path»-ключе.
+    let v2 = json!({ "cache_file": { "patK": "x" } });
+    // patK не путь (нет суффикса _path) — контроль, что fold не ломает обычные ключи.
+    assert!(reject_file_keys("", &v2).is_ok());
+}
