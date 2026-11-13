@@ -643,6 +643,7 @@ version = "0.9.3"
 dependencies = [
  "async-trait",
  "lavray-cfgbuild",
+ "lavray-links",
  "lavray-model",
  "lavray-presets",
  "lavray-proto",

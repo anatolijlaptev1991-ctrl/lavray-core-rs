@@ -8,6 +8,7 @@
 
 mod group_scan;
 pub mod groups;
+mod groups_update;
 pub mod helpers;
 mod profile_scan;
 pub mod profiles;

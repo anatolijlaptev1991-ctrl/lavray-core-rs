@@ -14,6 +14,7 @@ lavray-model = { path = "../lavray-model" }
 lavray-store = { path = "../lavray-store" }
 lavray-presets = { path = "../lavray-presets" }
 lavray-cfgbuild = { path = "../lavray-cfgbuild" }
+lavray-links = { path = "../lavray-links" }
 prost.workspace = true
 tonic.workspace = true
 tokio.workspace = true
