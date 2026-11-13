@@ -7,6 +7,11 @@
 //! [`lavray_model::Profile`] с типоспецифичным `Detail`.
 
 pub mod caps;
+pub mod description;
+pub mod neko;
+mod neko_bean;
+mod neko_detail;
+mod neko_detail_quic;
 pub mod quic;
 pub mod socks_http;
 pub mod ss;
@@ -43,20 +48,29 @@ pub fn parse_link(raw: &str) -> Result<Profile> {
         ));
     }
     let scheme = s[..i].to_lowercase();
-    match scheme.as_str() {
+    // 0.2.1: хвост «?serverDescription=<base64>» в имени — служебный (P2-11).
+    let (s, description) = description::split_link_description(s);
+    let mut p = parse_scheme(&scheme, &s)?;
+    description::apply_server_description(&mut p, &description);
+    Ok(p)
+}
+
+fn parse_scheme(scheme: &str, s: &str) -> Result<Profile> {
+    match scheme {
         "ss" => ss::parse(s),
         "vmess" => vmess::parse(s),
-        "vless" | "trojan" => trojan_vless::parse(&scheme, s),
+        "vless" | "trojan" => trojan_vless::parse(scheme, s),
         "hy2" | "hysteria2" => quic::parse_hysteria2(s),
         "tuic" => quic::parse_tuic(s),
         "socks" | "socks4" | "socks4a" | "socks5" | "http" | "https" => {
-            socks_http::parse(&scheme, s)
+            socks_http::parse(scheme, s)
         }
+        "nekoray" => neko::parse_neko_link(s),
         "happ" => Err(LinkError(
             "зашифрованная ссылка — это подписка: добавьте её в «Подписки»".into(),
         )),
         _ => Err(LinkError(format!(
-            "неподдерживаемая схема {scheme:?} (ss, vmess, vless, trojan, hy2, tuic, socks, http/https)"
+            "неподдерживаемая схема {scheme:?} (ss, vmess, vless, trojan, hy2, tuic, socks, http/https, nekoray)"
         ))),
     }
 }
