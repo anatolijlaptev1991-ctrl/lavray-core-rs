@@ -9,7 +9,7 @@
 //! ```
 //! use lavray_presets::{builtin_presets, load_preset};
 //! let presets = builtin_presets().unwrap();
-//! assert_eq!(presets.len(), 5);
+//! assert_eq!(presets.len(), 6);
 //! assert!(presets.iter().any(|p| p.id == "lav-ru"));
 //! ```
 

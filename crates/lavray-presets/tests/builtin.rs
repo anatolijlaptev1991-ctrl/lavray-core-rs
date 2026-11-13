@@ -7,7 +7,7 @@ use lavray_presets::{builtin_presets, builtin_source, load_preset, BUILTIN_FILES
 #[test]
 fn all_five_builtins_load_and_validate() {
     let presets = builtin_presets().unwrap();
-    assert_eq!(presets.len(), 5);
+    assert_eq!(presets.len(), 6);
     for p in &presets {
         assert!(p.builtin, "{} должен быть builtin", p.id);
         assert!(p.validate().is_ok(), "{} невалиден", p.id);

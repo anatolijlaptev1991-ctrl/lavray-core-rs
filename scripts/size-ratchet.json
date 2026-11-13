@@ -84,7 +84,7 @@
   "crates/lavray-model/tests/profile.rs": 205,
   "crates/lavray-model/tests/settings_geo.rs": 137,
   "crates/lavray-model/tests/stream.rs": 90,
-  "crates/lavray-presets/src/builtin.rs": 51,
+  "crates/lavray-presets/src/builtin.rs": 56,
   "crates/lavray-presets/src/customrules.rs": 99,
   "crates/lavray-presets/src/lib.rs": 41,
   "crates/lavray-presets/src/limits.rs": 32,
