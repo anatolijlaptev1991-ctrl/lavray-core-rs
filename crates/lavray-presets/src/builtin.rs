@@ -41,7 +41,11 @@ pub fn builtin_presets() -> Result<Vec<Preset>, ValidationError> {
     for name in BUILTIN_FILES {
         let data =
             builtin_source(name).ok_or_else(|| ValidationError(format!("builtin: {name}")))?;
-        out.push(crate::load_preset(data)?);
+        let preset = crate::load_preset(data)?;
+        if !preset.builtin {
+            return Err(ValidationError(format!("builtin {name}: builtin=false")));
+        }
+        out.push(preset);
     }
     Ok(out)
 }

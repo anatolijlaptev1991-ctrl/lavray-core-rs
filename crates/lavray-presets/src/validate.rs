@@ -101,7 +101,7 @@ impl crate::types::Routing {
             }
         }
         if !self.custom_rules.is_empty()
-            && serde_json::from_str::<serde_json::Value>(&self.custom_rules).is_err()
+            && serde_json::from_str::<serde::de::IgnoredAny>(&self.custom_rules).is_err()
         {
             return Err(err("routing.custom_rules: не является корректным JSON"));
         }
@@ -121,7 +121,7 @@ impl crate::types::DnsBlock {
             )));
         }
         if self.mode == "advanced"
-            && serde_json::from_str::<serde_json::Value>(&self.advanced_json).is_err()
+            && serde_json::from_str::<serde::de::IgnoredAny>(&self.advanced_json).is_err()
         {
             return Err(err(
                 "dns.advanced_json: mode=advanced требует валидный JSON объекта dns",
