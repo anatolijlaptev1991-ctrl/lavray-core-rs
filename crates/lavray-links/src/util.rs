@@ -168,3 +168,27 @@ pub fn canonical_host(h: &str) -> String {
 pub fn is_ip_addr(h: &str) -> bool {
     h.parse::<std::net::IpAddr>().is_ok()
 }
+
+/// Экранирует всё, кроме unreserved (RFC 3986 §2.3: ALPHA/DIGIT/-._~).
+/// Аналог Qt QUrl::toPercentEncoding: пробел → %20, «+» не используется
+/// (паритет Go percentEncodeAll).
+pub fn percent_encode_all(s: &str) -> String {
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+    let mut out = String::with_capacity(s.len());
+    for &c in s.as_bytes() {
+        if c.is_ascii_alphanumeric() || matches!(c, b'-' | b'.' | b'_' | b'~') {
+            out.push(c as char);
+        } else {
+            out.push('%');
+            out.push(HEX[(c >> 4) as usize] as char);
+            out.push(HEX[(c & 0xf) as usize] as char);
+        }
+    }
+    out
+}
+
+/// base64url c padding (QByteArray::toBase64(Base64UrlEncoding), паритет Go
+/// encodeB64URL).
+pub fn encode_b64_url(s: &str) -> String {
+    base64::engine::general_purpose::URL_SAFE.encode(s)
+}
