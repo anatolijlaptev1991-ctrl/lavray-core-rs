@@ -144,7 +144,7 @@ impl Store {
 
     /// Следующий id: высоководная отметка в meta только растёт (L18 аудита №1 —
     /// MAX(id)+1 переиспользует id удалённой записи, ломая chain/front_proxy).
-    fn next_id(&self, table: &str) -> Result<i64> {
+    pub(crate) fn next_id(&self, table: &str) -> Result<i64> {
         let key = format!("store.last_id.{table}");
         let max_id: i64 = self.conn.query_row(
             &format!("SELECT COALESCE(MAX(id), 0) FROM {table}"),

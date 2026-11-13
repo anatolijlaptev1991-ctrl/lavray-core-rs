@@ -40,7 +40,7 @@ fn front_proxy(store: &Store) -> i64 {
         group_id: DEFAULT_GROUP_ID,
         ..Default::default()
     };
-    store.create_profile(&p, 1024).unwrap()
+    store.create_profile(&p).unwrap()
 }
 
 #[test]
@@ -176,8 +176,10 @@ fn profile_order_computed() {
         group_id: gid,
         ..Default::default()
     };
-    let id1 = store.create_profile(&p, 2048).unwrap();
-    let id2 = store.create_profile(&p, 1024).unwrap();
+    let id1 = store.create_profile(&p).unwrap();
+    let id2 = store.create_profile(&p).unwrap();
+    // Авто sort_key: id1 раньше id2; reorder задаёт обратный порядок (FR-UI-074).
+    store.reorder_profiles(gid, &[id2, id1]).unwrap();
     let g = store.get_group(gid).unwrap();
     assert_eq!(g.profile_order, vec![id2, id1], "порядок по sort_key");
 }

@@ -62,7 +62,7 @@ fn create_and_list_group() {
 fn create_and_get_profile_round_trip() {
     let store = Store::open_memory().unwrap();
     let p = vmess_profile(DEFAULT_GROUP_ID);
-    let id = store.create_profile(&p, 1024).unwrap();
+    let id = store.create_profile(&p).unwrap();
     let back = store.get_profile(id).unwrap();
     assert_eq!(back.id, id);
     assert_eq!(back.address, "example.com");
@@ -86,10 +86,10 @@ fn count_profiles_in_group() {
     let store = Store::open_memory().unwrap();
     assert_eq!(store.count_profiles(DEFAULT_GROUP_ID).unwrap(), 0);
     store
-        .create_profile(&vmess_profile(DEFAULT_GROUP_ID), 1024)
+        .create_profile(&vmess_profile(DEFAULT_GROUP_ID))
         .unwrap();
     store
-        .create_profile(&vmess_profile(DEFAULT_GROUP_ID), 2048)
+        .create_profile(&vmess_profile(DEFAULT_GROUP_ID))
         .unwrap();
     assert_eq!(store.count_profiles(DEFAULT_GROUP_ID).unwrap(), 2);
 }
@@ -103,7 +103,7 @@ fn profile_cascade_on_group_delete() {
             ..Default::default()
         })
         .unwrap();
-    store.create_profile(&vmess_profile(gid), 1024).unwrap();
+    store.create_profile(&vmess_profile(gid)).unwrap();
     assert_eq!(store.count_profiles(gid).unwrap(), 1);
     store
         .conn()

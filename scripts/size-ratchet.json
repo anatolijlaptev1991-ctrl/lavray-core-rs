@@ -86,8 +86,12 @@
   "crates/lavray-store/src/group_scan.rs": 58,
   "crates/lavray-store/src/groups.rs": 173,
   "crates/lavray-store/src/helpers.rs": 48,
-  "crates/lavray-store/src/lib.rs": 154,
+  "crates/lavray-store/src/lib.rs": 101,
+  "crates/lavray-store/src/profile_scan.rs": 45,
+  "crates/lavray-store/src/profiles.rs": 156,
+  "crates/lavray-store/src/profiles_ops.rs": 144,
   "crates/lavray-store/src/schema.rs": 134,
-  "crates/lavray-store/tests/audit_regressions.rs": 183,
+  "crates/lavray-store/tests/audit_regressions.rs": 185,
+  "crates/lavray-store/tests/profile_crud.rs": 166,
   "crates/lavray-store/tests/store.rs": 149
 }

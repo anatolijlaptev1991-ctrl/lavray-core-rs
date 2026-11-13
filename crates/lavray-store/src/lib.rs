@@ -9,10 +9,12 @@
 mod group_scan;
 pub mod groups;
 pub mod helpers;
+mod profile_scan;
+pub mod profiles;
+mod profiles_ops;
 pub mod schema;
 
-use helpers::{now_ms, type_str};
-use lavray_model::Profile;
+use helpers::now_ms;
 use rusqlite::Connection;
 use thiserror::Error;
 
@@ -62,61 +64,6 @@ impl Store {
     /// Доступ к соединению (для расширенных операций).
     pub fn conn(&self) -> &Connection {
         &self.conn
-    }
-
-    // ---- Профили ----
-
-    /// Создать профиль (канонический JSON в data), вернуть id.
-    pub fn create_profile(&self, profile: &Profile, sort_key: i64) -> Result<i64> {
-        let data = serde_json::to_string(profile).map_err(|e| StoreError::Model(e.to_string()))?;
-        let now = now_ms();
-        self.conn.execute(
-            "INSERT INTO profiles (group_id, type, name, address, port, sort_key, favorite, notes, data, created_at_ms, updated_at_ms)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10)",
-            rusqlite::params![
-                profile.group_id,
-                type_str(profile.r#type),
-                profile.name,
-                profile.address,
-                profile.port,
-                sort_key,
-                i64::from(profile.favorite),
-                profile.notes,
-                data,
-                now,
-            ],
-        )?;
-        Ok(self.conn.last_insert_rowid())
-    }
-
-    /// Прочитать профиль по id.
-    pub fn get_profile(&self, id: i64) -> Result<Profile> {
-        let data: String = self
-            .conn
-            .query_row("SELECT data FROM profiles WHERE id = ?1", [id], |r| {
-                r.get(0)
-            })
-            .map_err(|e| match e {
-                rusqlite::Error::QueryReturnedNoRows => {
-                    StoreError::NotFound(format!("профиль {id}"))
-                }
-                other => StoreError::Sqlite(other),
-            })?;
-        let mut profile: Profile =
-            serde_json::from_str(&data).map_err(|e| StoreError::Model(e.to_string()))?;
-        profile.id = id;
-        Ok(profile)
-    }
-
-    /// Число профилей в группе.
-    pub fn count_profiles(&self, group_id: i64) -> Result<i64> {
-        self.conn
-            .query_row(
-                "SELECT COUNT(*) FROM profiles WHERE group_id = ?1",
-                [group_id],
-                |r| r.get(0),
-            )
-            .map_err(Into::into)
     }
 
     // ---- Настройки ----
