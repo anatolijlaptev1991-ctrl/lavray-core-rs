@@ -71,6 +71,8 @@ pub struct Profile {
     pub custom_outbound_json: String,
     pub custom_config_json: String,
     pub custom_fields_confirmed: bool,
+    /// Хэш подтверждённого custom-содержимого (T-08B, customhash.rs).
+    pub custom_hash: String,
     pub stream: Option<StreamSettings>,
     pub detail: Option<Detail>,
     pub created_at_ms: i64,
@@ -96,6 +98,7 @@ impl Default for Profile {
             custom_outbound_json: String::new(),
             custom_config_json: String::new(),
             custom_fields_confirmed: false,
+            custom_hash: String::new(),
             stream: None,
             detail: None,
             created_at_ms: 0,
