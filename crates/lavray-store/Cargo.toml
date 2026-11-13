@@ -1,0 +1,19 @@
+[package]
+name = "lavray-store"
+description = "LAVRay persistence: sqlite (rusqlite) profiles/groups/settings, migrations"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+lavray-model = { path = "../lavray-model" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+rusqlite.workspace = true
+
+[lints]
+workspace = true

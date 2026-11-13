@@ -22,5 +22,9 @@
   "crates/lavray-presets/tests/audit_gaps.rs": 185,
   "crates/lavray-presets/tests/builtin.rs": 105,
   "crates/lavray-presets/tests/localized.rs": 72,
-  "crates/lavray-presets/tests/validation.rs": 255
+  "crates/lavray-presets/tests/validation.rs": 255,
+  "crates/lavray-store/src/helpers.rs": 48,
+  "crates/lavray-store/src/lib.rs": 194,
+  "crates/lavray-store/src/schema.rs": 124,
+  "crates/lavray-store/tests/store.rs": 149
 }
