@@ -26,7 +26,8 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
 - [x] Profile (13 типов) + Detail (9 bean-структур), кастомный JSON detail по type.
 - [x] Group/SubscriptionInfo/GroupKind, TestResult/TrafficCounters.
 - [x] 14 тестов, clippy 0. VMess/Vless явный rename (snake_case → v_mess).
-- [ ] Settings/geo, canonjson, dedupkey, customhash (подволна 2b).
+- [x] StreamSettings + Profile.stream (волна 2b), is_internal_full.
+- [ ] Settings/geo, canonjson, dedupkey, customhash (остаток 2b).
 - [ ] Суб-агент аудит волны 2.
 
 ## Волна 3 — lavray-links ✅ (парсинг)
@@ -45,11 +46,22 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
 - [ ] nekoimport (миграция NekoBox→LAVRay), подписки/latency/traffic CRUD.
 - [ ] Суб-агент аудит волны 4.
 
-## Волна 5 — lavray-cfgbuild
+## Волна 5 — lavray-cfgbuild ✅
 
-- [ ] Построение конфига sing-box: route/dns/inbounds/outbounds/tproxy.
-- [ ] Golden-тесты (байт-в-байт с Go `cfgbuild/testdata`).
-- [ ] Пресеты → правила маршрутизации.
+- [x] Построение конфига sing-box: route/dns/inbounds/outbounds/tproxy.
+- [x] Golden-тесты: 37/37 байт-в-байт с Go `cfgbuild/testdata` (serde_json
+      BTreeMap → сортировка ключей MarshalIndent; ZERO-дефолты partial settings).
+- [x] Пресеты → правила маршрутизации (rule-set .srs, dns_routing, процессные).
+- [x] Allowlist-мерж custom_config (LNB-25), запрет путей к файлам (T-08).
+- [x] 84 теста (37 golden + security/allowlist/units/validate), clippy 0.
+- [ ] Суб-агент аудит волны 5.
+
+## Волна 2b — model/presets достройка ✅ (частично)
+
+- [x] StreamSettings (ws/grpc/tls/reality/mux/xhttp) + Profile.stream, round-trip.
+- [x] is_internal_full; lenient unmarshal (serde default, паритет Go zero-values).
+- [x] presets: parse/normalize_custom_rules, effective_process_rules (+тесты).
+- [ ] Settings/geo, canonjson, dedupkey, customhash (остаток 2b).
 
 ## Волна 6 — lavray-proto + lavray-api
 
