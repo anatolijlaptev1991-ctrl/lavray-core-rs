@@ -1,6 +1,7 @@
 # CI LAVRay Core (Rust) — те же стандарты, что и Linux-сборка:
-# fmt + clippy pedantic+perf (ноль предупреждений) + тесты + сборка release.
-# Трещотка размеров: новые файлы ≤200 строк, большие не растут.
+# fmt + clippy pedantic+perf (ноль предупреждений) + тесты + release-сборка
+# + smoke реального кода на артефакте + трещотка размеров.
+# Каждый шаг верифицирован в WSL/Linux — «ловится только на ubuntu».
 
 name: CI
 
@@ -21,6 +22,7 @@ jobs:
   quality:
     name: "fmt + clippy + tests"
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -33,27 +35,68 @@ jobs:
       # lavray-proto (tonic-build) требует системный protoc: ubuntu-24.04
       # раннеры больше не включают его в образ.
       - name: "protoc"
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends protobuf-compiler
+          protoc --version
 
       - name: "fmt"
         run: cargo fmt --check
 
       - name: "clippy pedantic + perf (ноль предупреждений)"
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --all-targets --locked -- -D warnings
 
       - name: "tests"
-        run: cargo test --workspace
+        run: cargo test --workspace --locked
 
       - name: "release build"
-        run: cargo build --workspace --release
+        run: cargo build --workspace --release --locked
+
+  smoke:
+    name: "Smoke: реальный код на release-артефакте"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: "protoc"
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends protobuf-compiler
+
+      # Собирается release-артефакт и запускается ПРИМЕР, использующий
+      # библиотеку по назначению: строит конфиг из golden-входа и сверяется
+      # с эталоном байт-в-байт (дух smoke lavray-linux: установил — проверил).
+      - name: "Сборка release"
+        run: cargo build --release --locked -p lavray-cfgbuild --example build_config
+
+      - name: "Smoke: golden-конфиги байт-в-байт"
+        run: |
+          set -euo pipefail
+          cd crates/lavray-cfgbuild
+          for g in tests/testdata/golden/*.in.json; do
+            w="${g%.in.json}.want.json"
+            ../../target/release/examples/build_config "$g" "$w"
+          done
+          echo "Smoke OK: все golden-векторы байт-в-байт"
 
   ratchet:
     name: "трещотка размеров"
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: "size ratchet"
-        run: python scripts/size_ratchet.py
+        run: |
+          set -euo pipefail
+          python scripts/size_ratchet.py

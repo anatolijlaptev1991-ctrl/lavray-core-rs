@@ -30,7 +30,7 @@ async fn describe_returns_catalog_and_groups() {
         .unwrap();
     let inner = resp.into_inner();
     assert!(inner.descriptors.len() > 50, "каталог настроек");
-    assert!(!inner.groups.is_empty());
+    assert_ne!(inner.groups.len(), 0);
     assert!(inner.descriptors.iter().any(|d| d.key == "inbound.port"));
 }
 

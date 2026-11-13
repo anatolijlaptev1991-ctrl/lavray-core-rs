@@ -13,6 +13,7 @@
   "crates/lavray-api/src/settings.rs": 182,
   "crates/lavray-api/tests/profile_service.rs": 258,
   "crates/lavray-api/tests/settings_service.rs": 124,
+  "crates/lavray-cfgbuild/examples/build_config.rs": 107,
   "crates/lavray-cfgbuild/src/builder.rs": 110,
   "crates/lavray-cfgbuild/src/chain.rs": 189,
   "crates/lavray-cfgbuild/src/dns.rs": 130,
