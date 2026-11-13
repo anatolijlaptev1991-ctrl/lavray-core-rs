@@ -93,7 +93,7 @@
   "crates/lavray-presets/src/validate.rs": 199,
   "crates/lavray-presets/tests/audit_gaps.rs": 185,
   "crates/lavray-presets/tests/builtin.rs": 105,
-  "crates/lavray-presets/tests/customrules.rs": 71,
+  "crates/lavray-presets/tests/customrules.rs": 83,
   "crates/lavray-presets/tests/localized.rs": 72,
   "crates/lavray-presets/tests/process_rules.rs": 74,
   "crates/lavray-presets/tests/validation.rs": 255,

@@ -30,6 +30,11 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      # lavray-proto (tonic-build) требует системный protoc: ubuntu-24.04
+      # раннеры больше не включают его в образ.
+      - name: "protoc"
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
       - name: "fmt"
         run: cargo fmt --check
 

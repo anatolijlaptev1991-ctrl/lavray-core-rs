@@ -42,7 +42,7 @@ fn vless_no_security_by_default() {
     // Go applyStreamFromQuery всегда ставит network="tcp"; security пуст (def "").
     let st = p.stream.expect("network=tcp эмитится всегда");
     assert_eq!(st.network, "tcp");
-    assert!(st.security.is_empty());
+    assert_eq!(st.security, "");
 }
 
 #[test]

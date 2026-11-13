@@ -6,10 +6,22 @@ use lavray_presets::{normalize_custom_rules, parse_custom_rules};
 
 #[test]
 fn empty_forms() {
-    assert!(parse_custom_rules("").unwrap().is_empty());
-    assert!(parse_custom_rules("   ").unwrap().is_empty());
-    assert!(parse_custom_rules("null").unwrap().is_empty());
-    assert!(parse_custom_rules("{}").unwrap().is_empty());
+    assert_eq!(
+        parse_custom_rules("").unwrap(),
+        Vec::<serde_json::Value>::new()
+    );
+    assert_eq!(
+        parse_custom_rules("   ").unwrap(),
+        Vec::<serde_json::Value>::new()
+    );
+    assert_eq!(
+        parse_custom_rules("null").unwrap(),
+        Vec::<serde_json::Value>::new()
+    );
+    assert_eq!(
+        parse_custom_rules("{}").unwrap(),
+        Vec::<serde_json::Value>::new()
+    );
     assert_eq!(normalize_custom_rules("").unwrap(), "");
     assert_eq!(normalize_custom_rules("{}").unwrap(), "");
 }

@@ -91,8 +91,8 @@ fn ports_single_and_ranges() {
 
 #[test]
 fn ports_empty_ok() {
-    assert!(hysteria2_server_ports("").unwrap().is_empty());
-    assert!(hysteria2_server_ports("  ").unwrap().is_empty());
+    assert_eq!(hysteria2_server_ports("").unwrap(), Vec::<String>::new());
+    assert_eq!(hysteria2_server_ports("  ").unwrap(), Vec::<String>::new());
 }
 
 #[test]

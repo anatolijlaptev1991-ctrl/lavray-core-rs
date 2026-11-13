@@ -33,7 +33,7 @@ fn extra_langs_alphabetical_after_canonical() {
 fn empty_is_empty_object() {
     let l = Localized::new();
     assert_eq!(serde_json::to_string(&l).unwrap(), "{}");
-    assert!(l.is_empty());
+    assert_eq!(l, Localized::new());
 }
 
 #[test]

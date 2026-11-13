@@ -55,7 +55,7 @@ fn create_resets_custom_hash() {
     let mut p = profile("a");
     p.custom_hash = "forged".into();
     let id = s.create_profile(&p).unwrap();
-    assert!(s.get_profile(id).unwrap().custom_hash.is_empty());
+    assert_eq!(s.get_profile(id).unwrap().custom_hash, "");
 }
 
 #[test]

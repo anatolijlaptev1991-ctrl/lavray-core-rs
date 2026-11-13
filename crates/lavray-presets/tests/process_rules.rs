@@ -27,7 +27,7 @@ fn empty_platforms_applies_to_all() {
     let p = preset_with(vec![rule(&[], "proxy")]);
     let (out, warn) = effective_process_rules(&p, "windows", false);
     assert_eq!(out.len(), 1);
-    assert!(warn.is_empty());
+    assert_eq!(warn, Vec::<String>::new());
 }
 
 #[test]
@@ -52,7 +52,7 @@ fn darwin_maps_to_macos() {
 fn openwrt_drops_all_with_warning() {
     let p = preset_with(vec![rule(&[], "proxy")]);
     let (out, warn) = effective_process_rules(&p, "linux", true);
-    assert!(out.is_empty());
+    assert_eq!(out, Vec::<ProcessRule>::new());
     assert_eq!(warn.len(), 1);
     assert!(warn[0].contains("роутере"));
 }
@@ -61,7 +61,7 @@ fn openwrt_drops_all_with_warning() {
 fn unknown_platform_drops_with_warning() {
     let p = preset_with(vec![rule(&[], "proxy")]);
     let (out, warn) = effective_process_rules(&p, "freebsd", false);
-    assert!(out.is_empty());
+    assert_eq!(out, Vec::<ProcessRule>::new());
     assert_eq!(warn.len(), 1);
 }
 
@@ -69,6 +69,6 @@ fn unknown_platform_drops_with_warning() {
 fn no_rules_no_warning() {
     let p = preset_with(vec![]);
     let (out, warn) = effective_process_rules(&p, "freebsd", false);
-    assert!(out.is_empty());
-    assert!(warn.is_empty());
+    assert_eq!(out, Vec::<ProcessRule>::new());
+    assert_eq!(warn, Vec::<String>::new());
 }

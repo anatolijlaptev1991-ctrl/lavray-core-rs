@@ -48,8 +48,8 @@ fn nekoray_drops_custom_config() {
     let bean =
         r#"{"name":"C","addr":"h.com","port":443,"id":"u","c_cfg":"{\"evil\":1}","c_out":"x"}"#;
     let p = parse_link(&format!("nekoray://vmess#{}", b64url(bean))).unwrap();
-    assert!(p.custom_config_json.is_empty());
-    assert!(p.custom_outbound_json.is_empty());
+    assert_eq!(p.custom_config_json, "");
+    assert_eq!(p.custom_outbound_json, "");
 }
 
 #[test]
@@ -118,14 +118,14 @@ fn server_description_bad_base64_just_stripped() {
     let link = "trojan://pw@h.com:443#Name?serverDescription=!!!notbase64";
     let p = parse_link(link).unwrap();
     assert_eq!(p.name, "Name");
-    assert!(p.notes.is_empty());
+    assert_eq!(p.notes, "");
 }
 
 #[test]
 fn no_description_unchanged() {
     let p = parse_link("trojan://pw@h.com:443#PlainName").unwrap();
     assert_eq!(p.name, "PlainName");
-    assert!(p.notes.is_empty());
+    assert_eq!(p.notes, "");
 }
 
 #[test]
@@ -145,5 +145,5 @@ fn description_vmess_json_name_preserved() {
     let b64 = base64::engine::general_purpose::STANDARD.encode(json);
     let p = parse_link(&format!("vmess://{b64}")).unwrap();
     assert_eq!(p.name, "MyName");
-    assert!(p.notes.is_empty());
+    assert_eq!(p.notes, "");
 }
