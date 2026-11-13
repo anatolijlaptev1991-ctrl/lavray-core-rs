@@ -1,4 +1,10 @@
 {
+  "crates/lavray-model/src/detail.rs": 195,
+  "crates/lavray-model/src/group.rs": 114,
+  "crates/lavray-model/src/lib.rs": 19,
+  "crates/lavray-model/src/profile.rs": 101,
+  "crates/lavray-model/src/profile_serde.rs": 143,
+  "crates/lavray-model/tests/profile.rs": 197,
   "crates/lavray-presets/src/builtin.rs": 47,
   "crates/lavray-presets/src/lib.rs": 35,
   "crates/lavray-presets/src/limits.rs": 32,
