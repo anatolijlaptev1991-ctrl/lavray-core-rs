@@ -66,6 +66,16 @@ const MIGRATIONS: &[(i64, &[&str])] = &[
         ],
     ),
     (
+        // L19/L20 аудита №1 (паритет Go v2): гарантия Default-группы для уже
+        // применённой v1 + исправление дефолта активного пресета lav-global→global.
+        2,
+        &[
+            "INSERT OR IGNORE INTO groups (id, kind, name, archive, skip_auto_update, tab_order, created_at_ms, updated_at_ms)
+             VALUES (1000000000, 1, 'Default', 0, 0, 0, strftime('%s','now')*1000, strftime('%s','now')*1000)",
+            "UPDATE settings SET value = '\"global\"' WHERE key = 'routing.active_preset' AND value = '\"lav-global\"'",
+        ],
+    ),
+    (
         3,
         &[
             "ALTER TABLE profiles ADD COLUMN custom_hash TEXT",

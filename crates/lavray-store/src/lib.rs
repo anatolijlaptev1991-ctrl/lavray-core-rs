@@ -6,11 +6,13 @@
 //! (sqlite, rusqlite): профили/группы/настройки, миграции. Канонический JSON
 //! профиля хранится в `profiles.data` (паритет core-port-plan §5.2).
 
+mod group_scan;
+pub mod groups;
 pub mod helpers;
 pub mod schema;
 
-use helpers::{i64_to_kind, kind_to_i64, now_ms, type_str};
-use lavray_model::{Group, Profile};
+use helpers::{now_ms, type_str};
+use lavray_model::Profile;
 use rusqlite::Connection;
 use thiserror::Error;
 
@@ -60,48 +62,6 @@ impl Store {
     /// Доступ к соединению (для расширенных операций).
     pub fn conn(&self) -> &Connection {
         &self.conn
-    }
-
-    // ---- Группы ----
-
-    /// Создать группу, вернуть её id.
-    pub fn create_group(&self, group: &Group) -> Result<i64> {
-        let now = now_ms();
-        self.conn.execute(
-            "INSERT INTO groups (kind, name, subscription_url, archive, skip_auto_update, tab_order, created_at_ms, updated_at_ms)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)",
-            rusqlite::params![
-                kind_to_i64(group.kind),
-                group.name,
-                group.subscription_url,
-                i64::from(group.archive),
-                i64::from(group.skip_auto_update),
-                group.tab_order,
-                now,
-            ],
-        )?;
-        Ok(self.conn.last_insert_rowid())
-    }
-
-    /// Список групп в порядке tab_order.
-    pub fn list_groups(&self) -> Result<Vec<Group>> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, kind, name, subscription_url, archive, skip_auto_update, tab_order FROM groups ORDER BY tab_order, id",
-        )?;
-        let rows = stmt.query_map([], |r| {
-            Ok(Group {
-                id: r.get(0)?,
-                kind: i64_to_kind(r.get(1)?),
-                name: r.get(2)?,
-                subscription_url: r.get::<_, Option<String>>(3)?.unwrap_or_default(),
-                archive: r.get::<_, i64>(4)? != 0,
-                skip_auto_update: r.get::<_, i64>(5)? != 0,
-                tab_order: r.get(6)?,
-                ..Default::default()
-            })
-        })?;
-        rows.collect::<rusqlite::Result<Vec<_>>>()
-            .map_err(Into::into)
     }
 
     // ---- Профили ----
