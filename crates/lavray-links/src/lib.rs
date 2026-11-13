@@ -6,12 +6,15 @@
 //! Rust: vmess/vless/trojan/ss/hysteria2/tuic/socks/http. Возвращает
 //! [`lavray_model::Profile`] с типоспецифичным `Detail`.
 
+pub mod caps;
 pub mod quic;
 pub mod socks_http;
 pub mod ss;
+pub mod stream;
 pub mod trojan_vless;
 pub mod util;
 pub mod vmess;
+mod vmess_json;
 
 pub use util::{LinkError, Result};
 

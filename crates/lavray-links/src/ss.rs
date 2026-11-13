@@ -2,28 +2,15 @@
 
 //! Парсер ss:// — SIP002 (`base64(method:password)@host:port`) и v2rayN
 //! (`base64(method:password@host:port)`). Паритет с Go `links/parse.go parseSS`.
+//! Фикс P2-1 (18 методов, без plain), P1-3 (require_port), P2-8 (strict padded).
 
+use crate::caps::SS_METHODS;
 use crate::util::{
-    check_field_len, decode_b64_strict, decode_b64_url, frag_name, host_port, parse_url, query_get,
-    query_pairs, user_info, LinkError, Result, MAX_FIELD_LENGTH,
+    check_field_len, decode_b64_strict, frag_name, host_port, parse_url, query_get, query_pairs,
+    require_port, user_info, LinkError, Result, MAX_FIELD_LENGTH, MAX_PLUGIN_LENGTH,
+    MAX_REMARK_LENGTH,
 };
 use lavray_model::{Detail, Profile, ProfileType, ShadowsocksDetail};
-
-/// Поддерживаемые методы шифрования SS (LNB-17).
-const METHODS: [&str; 12] = [
-    "aes-128-gcm",
-    "aes-192-gcm",
-    "aes-256-gcm",
-    "chacha20-ietf-poly1305",
-    "xchacha20-ietf-poly1305",
-    "2022-blake3-aes-128-gcm",
-    "2022-blake3-aes-256-gcm",
-    "2022-blake3-chacha20-poly1305",
-    "none",
-    "plain",
-    "aes-128-cfb",
-    "aes-256-cfb",
-];
 
 /// Разобрать ss:// ссылку.
 pub fn parse(s: &str) -> Result<Profile> {
@@ -40,28 +27,30 @@ pub fn parse(s: &str) -> Result<Profile> {
         return Err(LinkError("ss: не указан пароль".into()));
     }
     check_field_len("пароль", &detail.password, MAX_FIELD_LENGTH)?;
-    if !METHODS.contains(&detail.method.as_str()) {
+    check_field_len("plugin", &detail.plugin, MAX_PLUGIN_LENGTH)?;
+    if !SS_METHODS.contains(&detail.method.as_str()) {
         return Err(LinkError(format!(
             "ss: метод {:?} не поддерживается",
             detail.method
         )));
     }
+    profile.port = require_port(profile.port)?;
+    check_field_len("имя", &profile.name, MAX_REMARK_LENGTH)?;
     profile.detail = Some(Detail::Shadowsocks(detail));
     Ok(profile)
 }
 
-/// SIP002: `ss://[base64url(method:password)|method:password]@host:port`.
+/// SIP002: `ss://[base64(method:password)|method:password]@host:port`.
 fn parse_sip002(s: &str) -> Result<(Profile, ShadowsocksDetail)> {
     let u = parse_url(s)?;
     let (host, port, present) = host_port(&u)?;
     if !present {
         return Err(LinkError("ss: не указан порт".into()));
     }
-    let (user, pass) = user_info(&u);
+    let (user, pass, _) = user_info(&u);
     let (method, password) = if pass.is_empty() {
-        // userinfo = base64url(method:password)
-        let bytes = decode_b64_url(&user)
-            .or_else(|| decode_b64_strict(&user))
+        // userinfo = base64(method:password), строго padded (deviations.yaml).
+        let bytes = decode_b64_strict(&user)
             .ok_or_else(|| LinkError("ss: некорректный base64 в userinfo".into()))?;
         let text = String::from_utf8_lossy(&bytes).into_owned();
         split_method_password(&text)?
@@ -93,7 +82,6 @@ fn parse_sip002(s: &str) -> Result<(Profile, ShadowsocksDetail)> {
 fn parse_v2rayn(body: &str) -> Result<(Profile, ShadowsocksDetail)> {
     let no_frag = body.split('#').next().unwrap_or(body);
     let bytes = decode_b64_strict(no_frag)
-        .or_else(|| decode_b64_url(no_frag))
         .ok_or_else(|| LinkError("ss: некорректный base64 (формат v2rayN)".into()))?;
     let mut link = String::from_utf8_lossy(&bytes).into_owned();
     if let Some(i) = body.find('#') {
@@ -105,7 +93,7 @@ fn parse_v2rayn(body: &str) -> Result<(Profile, ShadowsocksDetail)> {
     if !present {
         return Err(LinkError("ss: не указан порт".into()));
     }
-    let (method, password) = user_info(&u);
+    let (method, password, _) = user_info(&u);
     let pairs = query_pairs(&u);
     let plugin = query_get(&pairs, "plugin")
         .map(|v| v.replace("simple-obfs;", "obfs-local;"))

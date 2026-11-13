@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-//! Утилиты разбора ссылок: base64 (строгий/URL-safe), query, host/port, имя.
-//! Паритет с Go `links/util.go` + `parse.go` (hostPort/fragName/userInfo).
+//! Утилиты разбора ссылок (паритет Go `links/util.go` + `parse.go`): base64
+//! строгий padded (Std+URL), query без «+»→пробел (QUrlQuery), host/port,
+//! лимиты LNB-12/17, канонизация хоста.
 
 use base64::Engine;
 use thiserror::Error;
@@ -15,26 +16,42 @@ pub struct LinkError(pub String);
 /// Результат разбора ссылки.
 pub type Result<T> = std::result::Result<T, LinkError>;
 
-/// Максимальная длина ссылки (байт).
+/// Лимиты входа (LNB-12/17, паритет Go).
 pub const MAX_LINK_LENGTH: usize = 64 * 1024;
-/// Максимальная длина поля (байт).
-pub const MAX_FIELD_LENGTH: usize = 4096;
+/// Пароли/логины/uuid/sni/метод/отпечаток…
+pub const MAX_FIELD_LENGTH: usize = 1024;
+/// Имя/замечание профиля.
+pub const MAX_REMARK_LENGTH: usize = 4096;
+/// plugin-строка ss.
+pub const MAX_PLUGIN_LENGTH: usize = 2048;
+/// extra-параметр XHTTP.
+pub const MAX_XHTTP_EXTRA: usize = 8192;
 
-/// Строгий base64 (standard, с padding) — v2rayN-формат vmess.
+/// Строгий padded base64 (Std или URL-алфавит); \r\n и пустой вход отвергаются,
+/// без trim (паритет Go decodeB64Strict, deviations.yaml).
 pub fn decode_b64_strict(s: &str) -> Option<Vec<u8>> {
+    if s.is_empty() || s.contains(['\r', '\n']) {
+        return None;
+    }
     base64::engine::general_purpose::STANDARD
-        .decode(s.trim())
+        .decode(s)
         .ok()
+        .or_else(|| base64::engine::general_purpose::URL_SAFE.decode(s).ok())
 }
 
-/// URL-safe base64 без padding (SIP002 ss, v2rayN raw).
-pub fn decode_b64_url(s: &str) -> Option<Vec<u8>> {
-    let t = s.trim();
-    base64::engine::general_purpose::URL_SAFE_NO_PAD
-        .decode(t)
-        .ok()
-        .or_else(|| base64::engine::general_purpose::URL_SAFE.decode(t).ok())
-        .or_else(|| base64::engine::general_purpose::STANDARD.decode(t).ok())
+/// padded или raw base64 (std/url) — для neko-ссылок без padding.
+pub fn decode_b64_any(s: &str) -> Option<Vec<u8>> {
+    decode_b64_strict(s)
+        .or_else(|| {
+            base64::engine::general_purpose::STANDARD_NO_PAD
+                .decode(s)
+                .ok()
+        })
+        .or_else(|| {
+            base64::engine::general_purpose::URL_SAFE_NO_PAD
+                .decode(s)
+                .ok()
+        })
 }
 
 /// Разобрать URL-подобную ссылку.
@@ -47,14 +64,27 @@ pub fn frag_name(u: &Url) -> String {
     u.fragment().map(percent_decode).unwrap_or_default()
 }
 
-/// Пары query в порядке следования (дубликаты сохраняются).
+/// Пары query из RawQuery вручную: %XX декодируется БЕЗ «+»→пробел (QUrlQuery /
+/// Go url.PathUnescape), порядок сохраняется (паритет Go parseQuery).
 pub fn query_pairs(u: &Url) -> Vec<(String, String)> {
-    u.query_pairs()
-        .map(|(k, v)| (k.into_owned(), v.into_owned()))
-        .collect()
+    let Some(raw) = u.query() else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    for part in raw.split('&') {
+        if part.is_empty() {
+            continue;
+        }
+        let (k, v) = match part.split_once('=') {
+            Some((k, v)) => (k, v),
+            None => (part, ""),
+        };
+        out.push((percent_decode(k), percent_decode(v)));
+    }
+    out
 }
 
-/// Первое значение query-ключа.
+/// Первое значение query-ключа (first-occurrence-wins, queryItemValue Qt).
 pub fn query_get<'a>(pairs: &'a [(String, String)], key: &str) -> Option<&'a str> {
     pairs
         .iter()
@@ -62,14 +92,16 @@ pub fn query_get<'a>(pairs: &'a [(String, String)], key: &str) -> Option<&'a str
         .map(|(_, v)| v.as_str())
 }
 
-/// Хост и порт из URL; present=false — порт отсутствует.
+/// Хост и порт из URL; present=false — порт отсутствует. IPv6-зона (%25)
+/// отвергается (roundtrip-инвариант Go), хост канонизируется.
 pub fn host_port(u: &Url) -> Result<(String, i64, bool)> {
-    let host = u
+    let raw = u
         .host_str()
-        .ok_or_else(|| LinkError("не указан хост".into()))?
-        .trim_start_matches('[')
-        .trim_end_matches(']')
-        .to_string();
+        .ok_or_else(|| LinkError("не указан хост".into()))?;
+    if raw.contains("%25") || raw.contains('%') {
+        return Err(LinkError("IPv6 zone id не поддерживается в адресе".into()));
+    }
+    let host = canonical_host(raw);
     if host.is_empty() {
         return Err(LinkError("не указан хост".into()));
     }
@@ -79,35 +111,60 @@ pub fn host_port(u: &Url) -> Result<(String, i64, bool)> {
     }
 }
 
-/// userinfo: username и password (password может отсутствовать).
-pub fn user_info(u: &Url) -> (String, String) {
+/// userinfo: (username, password, has_pass). password URL-декодирован.
+pub fn user_info(u: &Url) -> (String, String, bool) {
     let user = percent_decode(u.username());
-    let pass = u.password().map(percent_decode).unwrap_or_default();
-    (user, pass)
+    match u.password() {
+        Some(p) => (user, percent_decode(p), true),
+        None => (user, String::new(), false),
+    }
 }
 
-///.Percent-декодирование строки.
+/// Percent-декодирование строки (без «+»→пробел).
 pub fn percent_decode(s: &str) -> String {
     percent_encoding::percent_decode_str(s)
         .decode_utf8_lossy()
         .into_owned()
 }
 
-/// Применить порт по умолчанию, если он отсутствует.
+/// Применить порт по умолчанию, если отсутствует; present-порт валидируется.
 pub fn apply_default_port(port: i64, present: bool, default: i64) -> Result<i64> {
     if !present {
         return Ok(default);
     }
-    if port <= 0 || port > 65535 {
-        return Err(LinkError(format!("порт {port} вне 1…65535")));
+    require_port(port)
+}
+
+/// Порт в диапазоне 1..65535 (LNB-15: порт 0 никогда не попадает в модель).
+pub fn require_port(port: i64) -> Result<i64> {
+    if !(1..=65535).contains(&port) {
+        return Err(LinkError(format!("порт {port} вне диапазона 1–65535")));
     }
     Ok(port)
 }
 
-/// Проверка длины поля.
+/// Проверка длины поля (LNB-17).
 pub fn check_field_len(field: &str, value: &str, max: usize) -> Result<()> {
     if value.len() > max {
-        return Err(LinkError(format!("{field}: длиннее {max} байт")));
+        return Err(LinkError(format!("поле {field} длиннее {max} байт")));
     }
     Ok(())
+}
+
+/// Канонизация хоста: IPv6-литерал (возможно в скобках) → сжатая форма;
+/// домен — как есть (паритет Go canonicalHost).
+pub fn canonical_host(h: &str) -> String {
+    let inner = h
+        .strip_prefix('[')
+        .and_then(|s| s.strip_suffix(']'))
+        .unwrap_or(h);
+    if let Ok(ip) = inner.parse::<std::net::IpAddr>() {
+        return ip.to_string();
+    }
+    h.to_string()
+}
+
+/// Хост является IP-литералом (v4/v6).
+pub fn is_ip_addr(h: &str) -> bool {
+    h.parse::<std::net::IpAddr>().is_ok()
 }
