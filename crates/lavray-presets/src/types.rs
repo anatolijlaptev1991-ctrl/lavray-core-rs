@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 pub const SCHEMA_VERSION: u32 = 1;
 
 /// Пресет маршрутизации.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Preset {
     /// Маркер схемы (`preset.schema.v1.json`).
     #[serde(rename = "$schema", default)]

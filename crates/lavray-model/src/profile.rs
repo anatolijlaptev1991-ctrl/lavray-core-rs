@@ -5,12 +5,14 @@
 //! (паритет Go `model.Profile.MarshalJSON`).
 
 use crate::detail::Detail;
+use crate::stream::StreamSettings;
 use serde::{Deserialize, Serialize};
 
 /// Тип профиля (proto enum ProfileType); в БД/JSON — строкой.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ProfileType {
+    #[default]
     Socks,
     Http,
     Shadowsocks,
@@ -69,6 +71,7 @@ pub struct Profile {
     pub custom_outbound_json: String,
     pub custom_config_json: String,
     pub custom_fields_confirmed: bool,
+    pub stream: Option<StreamSettings>,
     pub detail: Option<Detail>,
     pub created_at_ms: i64,
     pub updated_at_ms: i64,
@@ -93,6 +96,7 @@ impl Default for Profile {
             custom_outbound_json: String::new(),
             custom_config_json: String::new(),
             custom_fields_confirmed: false,
+            stream: None,
             detail: None,
             created_at_ms: 0,
             updated_at_ms: 0,

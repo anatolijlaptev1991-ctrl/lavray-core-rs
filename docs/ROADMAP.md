@@ -37,11 +37,13 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
 - [ ] Stream-настройки (ws/grpc/tls/reality), fuzz.
 - [ ] Суб-агент аудит волны 3.
 
-## Волна 4 — lavray-store
+## Волна 4 — lavray-store ✅ (ядро)
 
-- [ ] sqlite (rusqlite): профили/подписки/настройки/группы.
-- [ ] Миграции, nekoimport.
-- [ ] Тесты (паритет Go `store`).
+- [x] sqlite (rusqlite): профили/группы/настройки, канонический JSON в `data`.
+- [x] Миграции v1–v3 (идемпотентны), Default-группа (id 1_000_000_000), WAL/FK.
+- [x] 11 тестов (CRUD, каскад, upsert настроек), clippy 0, трещотка 0.
+- [ ] nekoimport (миграция NekoBox→LAVRay), подписки/latency/traffic CRUD.
+- [ ] Суб-агент аудит волны 4.
 
 ## Волна 5 — lavray-cfgbuild
 

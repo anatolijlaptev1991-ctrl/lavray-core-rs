@@ -1,0 +1,19 @@
+[package]
+name = "lavray-cfgbuild"
+description = "LAVRay sing-box config builder: outbounds/inbounds/dns/route, golden parity with Go"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+lavray-model = { path = "../lavray-model" }
+lavray-presets = { path = "../lavray-presets" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

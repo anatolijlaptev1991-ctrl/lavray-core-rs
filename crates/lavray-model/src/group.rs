@@ -7,10 +7,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 /// Вид группы (proto Group.Kind); смена после создания запрещена (FR-UI-109).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum GroupKind {
     /// Обычная группа (proto = 1).
+    #[default]
     Basic,
     /// Группа-подписка (proto = 2).
     Subscription,
@@ -44,8 +45,11 @@ pub struct SubscriptionInfo {
 /// Группа профилей + per-sub настройки.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Group {
+    #[serde(default)]
     pub id: i64,
+    #[serde(default)]
     pub name: String,
+    #[serde(default)]
     pub kind: GroupKind,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub subscription_url: String,

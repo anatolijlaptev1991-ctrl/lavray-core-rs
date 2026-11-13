@@ -1,0 +1,2 @@
+# Golden-фикстуры конфигбилдера — канонический LF (паритет Go MarshalIndent).
+*.json text eol=lf

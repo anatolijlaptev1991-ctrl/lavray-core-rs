@@ -5,17 +5,23 @@
 
 use crate::detail::Detail;
 use crate::profile::{Profile, ProfileType, TestResult, TrafficCounters};
+use crate::stream::StreamSettings;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 /// Промежуточное представление для serde (без detail — он сливается вручную).
 #[derive(Serialize, Deserialize)]
 struct ProfileRepr {
+    #[serde(default)]
     id: i64,
+    #[serde(default)]
     group_id: i64,
     r#type: ProfileType,
+    #[serde(default)]
     name: String,
+    #[serde(default)]
     address: String,
+    #[serde(default)]
     port: i64,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     favorite: bool,
@@ -37,6 +43,8 @@ struct ProfileRepr {
     custom_config_json: String,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     custom_fields_confirmed: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    stream: Option<StreamSettings>,
     #[serde(default, skip_serializing_if = "is_zero_i64")]
     created_at_ms: i64,
     #[serde(default, skip_serializing_if = "is_zero_i64")]
@@ -71,6 +79,7 @@ impl Serialize for Profile {
             custom_outbound_json: self.custom_outbound_json.clone(),
             custom_config_json: self.custom_config_json.clone(),
             custom_fields_confirmed: self.custom_fields_confirmed,
+            stream: self.stream.clone(),
             created_at_ms: self.created_at_ms,
             updated_at_ms: self.updated_at_ms,
         };
@@ -115,6 +124,7 @@ impl<'de> Deserialize<'de> for Profile {
             custom_outbound_json: repr.custom_outbound_json,
             custom_config_json: repr.custom_config_json,
             custom_fields_confirmed: repr.custom_fields_confirmed,
+            stream: repr.stream,
             detail,
             created_at_ms: repr.created_at_ms,
             updated_at_ms: repr.updated_at_ms,

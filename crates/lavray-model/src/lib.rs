@@ -10,6 +10,7 @@ pub mod detail;
 pub mod group;
 pub mod profile;
 mod profile_serde;
+pub mod stream;
 
 pub use detail::{
     ChainDetail, CustomDetail, Detail, Hysteria2Detail, NaiveDetail, ShadowsocksDetail,
@@ -17,3 +18,12 @@ pub use detail::{
 };
 pub use group::{Group, GroupKind, SubscriptionInfo};
 pub use profile::{Profile, ProfileType, TestResult, TrafficCounters};
+pub use stream::StreamSettings;
+
+/// Профиль «свой полный конфиг» (CUSTOM_CONFIG, core internal-full): конфиг
+/// ядра берётся из профиля целиком (паритет Go `model.IsInternalFull`).
+#[must_use]
+pub fn is_internal_full(p: &Profile) -> bool {
+    p.r#type == ProfileType::CustomConfig
+        && matches!(&p.detail, Some(Detail::Custom(d)) if d.core == "internal-full")
+}

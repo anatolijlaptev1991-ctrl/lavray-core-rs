@@ -14,13 +14,19 @@
 //! ```
 
 pub mod builtin;
+pub mod customrules;
 pub mod limits;
 pub mod localized;
+pub mod process_rules;
 pub mod types;
 pub mod validate;
 
 pub use builtin::{builtin_presets, builtin_source, BUILTIN_FILES};
+pub use customrules::{
+    normalize_custom_rules, parse_custom_rules, CustomRulesError, MAX_CUSTOM_RULES_BYTES,
+};
 pub use localized::Localized;
+pub use process_rules::effective_process_rules;
 pub use types::{DnsBlock, Preset, ProcessRule, Routing, SCHEMA_VERSION};
 pub use validate::ValidationError;
 
