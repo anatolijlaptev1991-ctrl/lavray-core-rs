@@ -4,14 +4,12 @@
 //! (ru, zh, en, es, de, затем прочие по алфавиту). Даёт байт-в-байт стабильный
 //! golden — паритет с Go `presets.Localized.MarshalJSON`.
 
+use crate::localized_order::canonical_keys;
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeMap;
 use std::fmt;
-
-/// Порядок поставки (SCHEMA: бренды не переводятся, говорящие имена — 5 языков).
-const CANONICAL_LANGS: [&str; 5] = ["ru", "zh", "en", "es", "de"];
 
 /// Локализованная строка: язык → текст.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -47,28 +45,16 @@ impl Localized {
         self.0.insert(lang.into(), text.into());
     }
 
-    /// Канонический порядок ключей: поставка, затем прочие по алфавиту.
-    fn canonical_keys(&self) -> Vec<&str> {
-        let mut keys: Vec<&str> = CANONICAL_LANGS
-            .iter()
-            .filter(|l| self.0.contains_key(**l))
-            .copied()
-            .collect();
-        let rest: Vec<&str> = self
-            .0
-            .keys()
-            .map(String::as_str)
-            .filter(|k| !CANONICAL_LANGS.contains(k))
-            .collect();
-        keys.extend(rest);
-        keys
+    /// Итерация по парам (язык, текст) — паритет обхода map в Go.
+    pub fn iter(&self) -> impl Iterator<Item = (&String, &String)> {
+        self.0.iter()
     }
 }
 
 impl Serialize for Localized {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let mut map = serializer.serialize_map(Some(self.0.len()))?;
-        for key in self.canonical_keys() {
+        for key in canonical_keys(&self.0) {
             map.serialize_entry(key, &self.0[key])?;
         }
         map.end()
