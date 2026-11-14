@@ -4,11 +4,9 @@
 //! `presets/custom.go` + `presets/limits.go`): «Сохранить как», «Дублировать»,
 //! правка встроенного через копию; Create/Update/Import вызывают PrepareUser.
 
-use crate::limits::{
-    MAX_LIST_ENTRIES, MAX_NAME_RUNES, MAX_PROCESS_NAMES, MAX_PROCESS_RULES,
-};
+use crate::limits::{MAX_LIST_ENTRIES, MAX_NAME_RUNES, MAX_PROCESS_NAMES, MAX_PROCESS_RULES};
 use crate::types::{Preset, SCHEMA_VERSION};
-use crate::{normalize_custom_rules, validate::ValidationError};
+use crate::validate::ValidationError;
 
 /// Значение `$schema` в файлах наборов (как у встроенных).
 pub const SCHEMA_REF: &str = "preset.schema.v1.json";
@@ -26,7 +24,7 @@ pub fn new_custom_from(src: &Preset, id: &str) -> Preset {
     c.id = id.into();
     c.builtin = false;
     if src.builtin {
-        c.source_id = src.id.clone();
+        c.source_id.clone_from(&src.id);
         c.source_revision = src.revision;
     }
     c
@@ -36,7 +34,8 @@ pub fn new_custom_from(src: &Preset, id: &str) -> Preset {
 /// → массив, лимиты пользователя, затем Validate по схеме. Ошибки называют
 /// путь поля (порт Go `Preset.PrepareUser`).
 pub fn prepare_user(p: &mut Preset) -> Result<(), ValidationError> {
-    let rules = crate::normalize_custom_rules(&p.routing.custom_rules)?;
+    let rules = crate::normalize_custom_rules(&p.routing.custom_rules)
+        .map_err(|e| ValidationError(format!("routing.custom_rules: {e}")))?;
     p.routing.custom_rules = rules;
     check_user_limits(p)?;
     p.validate()
@@ -44,7 +43,7 @@ pub fn prepare_user(p: &mut Preset) -> Result<(), ValidationError> {
 
 fn check_user_limits(p: &Preset) -> Result<(), ValidationError> {
     let mut named = false;
-    for (lang, name) in &p.name {
+    for (lang, name) in p.name.iter() {
         let n = name.chars().count();
         if n > MAX_NAME_RUNES {
             return Err(ValidationError(format!(

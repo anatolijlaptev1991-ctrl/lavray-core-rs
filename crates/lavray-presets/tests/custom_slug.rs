@@ -98,8 +98,12 @@ fn custom_from_user_keeps_own_source() {
 
 #[test]
 fn prepare_normalizes_custom_rules() {
-    let mut p = Preset::default();
-    p.name.insert("en", "Set");
+    // Реалистичный путь UI: «Сохранить как» от встроенного набора.
+    let base = lavray_presets::builtin_presets().unwrap();
+    let mut p = base.iter().find(|b| b.id == "lav-ru").unwrap().clone();
+    p.id = "custom:test".into();
+    p.revision = 1;
+    p.builtin = false;
     p.routing.custom_rules = "[ { \"outbound\" : \"proxy\" } ]".into();
     prepare_user(&mut p).unwrap();
     assert_eq!(p.routing.custom_rules, r#"[{"outbound":"proxy"}]"#);
@@ -122,7 +126,7 @@ fn prepare_name_too_long_rejected() {
 #[test]
 fn prepare_list_over_limit_rejected() {
     let mut p = Preset::default();
-    p.name.insert("en", "S".into());
+    p.name.insert("en", "S");
     p.routing.proxy_domain = (0..10_001).map(|i| format!("d{i}.com")).collect();
     assert!(prepare_user(&mut p).is_err());
 }
@@ -130,7 +134,7 @@ fn prepare_list_over_limit_rejected() {
 #[test]
 fn prepare_invalid_routing_rejected() {
     let mut p = Preset::default();
-    p.name.insert("en", "S".into());
+    p.name.insert("en", "S");
     p.routing = Routing {
         def_outbound: "bogus".into(),
         ..Default::default()
