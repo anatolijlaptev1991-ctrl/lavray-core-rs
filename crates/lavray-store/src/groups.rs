@@ -8,7 +8,7 @@ use crate::group_scan::{null_ms, null_str, scan_group};
 use crate::helpers::{kind_to_i64, now_ms};
 use crate::{Result, Store, StoreError};
 use lavray_model::Group;
-use rusqlite::{params, OptionalExtension};
+use rusqlite::{OptionalExtension, params};
 
 const GROUP_COLS: &str = "id, kind, name, subscription_url, archive, skip_auto_update, \
      front_proxy_id, subscription_info, update_interval_min, user_agent, http_headers, \
@@ -158,10 +158,10 @@ impl Store {
                 r.get(0)
             })
             .optional()?;
-        if let Some(v) = saved.and_then(|s| s.parse::<i64>().ok()) {
-            if v >= next {
-                next = v + 1;
-            }
+        if let Some(v) = saved.and_then(|s| s.parse::<i64>().ok())
+            && v >= next
+        {
+            next = v + 1;
         }
         self.conn.execute(
             "INSERT INTO meta (key, value) VALUES (?1, ?2) \

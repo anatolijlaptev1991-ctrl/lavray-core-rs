@@ -7,6 +7,7 @@
 use serde::{Deserialize, Serialize};
 
 pub mod descriptors;
+mod reader_tables;
 pub mod readers;
 pub mod update;
 

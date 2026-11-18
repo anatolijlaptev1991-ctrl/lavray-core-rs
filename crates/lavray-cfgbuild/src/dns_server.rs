@@ -4,7 +4,7 @@
 //! `cfgbuild/dns.go` makeDnsServer). Вынесено из dns.rs ради трещотки размеров.
 
 use crate::error::{Error, Result};
-use crate::util::{obj, Obj};
+use crate::util::{Obj, obj};
 use serde_json::json;
 
 /// Формы: "local", "fakeip", "[udp://|tls://|https://|h3://|quic://|tcp://|
@@ -30,20 +30,20 @@ pub fn make_dns_server(tag: &str, address: &str, detour: &str, use_resolver: boo
 
     let mut typ = "udp";
     let mut server = address.to_string();
-    if let Some(i) = server.find("://") {
-        if i > 0 {
-            let scheme = server[..i].to_lowercase();
-            server = server[i + 3..].to_string();
-            typ = match scheme.as_str() {
-                "tls" => "tls",
-                "https" => "https",
-                "h3" => "h3",
-                "quic" => "quic",
-                "tcp" => "tcp",
-                "dhcp" => "dhcp",
-                _ => "udp",
-            };
-        }
+    if let Some(i) = server.find("://")
+        && i > 0
+    {
+        let scheme = server[..i].to_lowercase();
+        server = server[i + 3..].to_string();
+        typ = match scheme.as_str() {
+            "tls" => "tls",
+            "https" => "https",
+            "h3" => "h3",
+            "quic" => "quic",
+            "tcp" => "tcp",
+            "dhcp" => "dhcp",
+            _ => "udp",
+        };
     }
     if let Some(slash) = server.find('/') {
         if typ == "https" || typ == "h3" {
@@ -60,15 +60,13 @@ pub fn make_dns_server(tag: &str, address: &str, detour: &str, use_resolver: boo
             }
             server = rest[..close].to_string();
         }
-    } else if let Some(colon) = server.rfind(':') {
-        if colon > 0 {
-            if let Ok(v) = server[colon + 1..].parse::<i64>() {
-                if v > 0 {
-                    server_port = v;
-                    server = server[..colon].to_string();
-                }
-            }
-        }
+    } else if let Some(colon) = server.rfind(':')
+        && colon > 0
+        && let Ok(v) = server[colon + 1..].parse::<i64>()
+        && v > 0
+    {
+        server_port = v;
+        server = server[..colon].to_string();
     }
     if server.is_empty() {
         return Err(Error::invalid(

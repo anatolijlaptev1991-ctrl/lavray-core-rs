@@ -9,13 +9,13 @@ use crate::dns::build_dns;
 use crate::error::{Error, Result};
 use crate::filekeys::reject_file_keys;
 use crate::inbounds::build_inbounds;
-use crate::route::{build_experimental, build_route, RuleSetCollector};
+use crate::route::{RuleSetCollector, build_experimental, build_route};
 use crate::settings::BuildSettings;
-use crate::util::{normalize_log_level, Obj};
+use crate::util::{Obj, normalize_log_level};
 use crate::{BuildRequest, BuildResult};
 use lavray_model::{Detail, Profile};
 use lavray_presets::{DnsBlock, Preset, Routing};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Каркас + outbounds + inbounds + DNS + route + experimental.
 pub(crate) fn build_sing_box_config(

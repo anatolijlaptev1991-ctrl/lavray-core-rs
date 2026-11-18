@@ -7,7 +7,7 @@
 use crate::build_proto::{build_socks_http, build_ss, build_trojan_vless};
 use crate::build_quic::{build_hysteria2, build_tuic, build_vmess_url, build_vmess_v2rayn};
 use crate::caps::{NETWORKS, UTLS_FPS};
-use crate::util::{percent_encode_all, LinkError, Result, MAX_REMARK_LENGTH};
+use crate::util::{LinkError, MAX_REMARK_LENGTH, Result, percent_encode_all};
 use lavray_model::{Profile, ProfileType};
 
 /// Параметры генерации ссылок.

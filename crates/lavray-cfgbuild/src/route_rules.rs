@@ -4,13 +4,13 @@
 //! ЕДИНСТВЕННОЕ место, задающее порядок: sniff → hijack-dns → custom пресета →
 //! block/proxy/direct (domain, ip) → процессные → tun-bypass → built-in block.
 
+use crate::BuildResult;
 use crate::error::{Error, Result};
-use crate::route::{make_match_rule, RuleSetCollector};
+use crate::route::{RuleSetCollector, make_match_rule};
 use crate::settings::BuildSettings;
 use crate::util::{goos_of, split_lines_skip_sharp, strings_to_value};
-use crate::BuildResult;
-use lavray_presets::{effective_process_rules, parse_custom_rules, Preset};
-use serde_json::{json, Value};
+use lavray_presets::{Preset, effective_process_rules, parse_custom_rules};
+use serde_json::{Value, json};
 
 /// Собрать route.rules в порядке sing-box (порт routeRules).
 pub fn route_rules(

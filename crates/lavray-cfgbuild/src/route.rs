@@ -4,13 +4,13 @@
 //! (geosite:/geoip: → локальные .srs), makeMatchRule, buildRoute, cache_file.
 //! Порядок правил задаёт route_rules (route_rules.rs) — единый источник.
 
+use crate::BuildResult;
 use crate::error::Result;
 use crate::route_rules::route_rules;
 use crate::settings::BuildSettings;
-use crate::util::{obj, Obj};
-use crate::BuildResult;
+use crate::util::{Obj, obj};
 use lavray_presets::Preset;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 
 /// Дедуплицированный сбор определений route.rule_set; порядок — порядок встречи.

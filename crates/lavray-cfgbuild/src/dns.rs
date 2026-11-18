@@ -3,13 +3,13 @@
 //! DNS-секция из пресета (порт Go `cfgbuild/dns.go`): simple/advanced,
 //! типизированные серверы sing-box 1.14, dns_routing-правила, fakeDNS (TUN).
 
-use crate::error::{Error, Result};
-use crate::route::{make_match_rule, RuleSetCollector};
-use crate::settings::BuildSettings;
-use crate::util::{obj, Obj};
 use crate::BuildResult;
+use crate::error::{Error, Result};
+use crate::route::{RuleSetCollector, make_match_rule};
+use crate::settings::BuildSettings;
+use crate::util::{Obj, obj};
 use lavray_presets::Preset;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// dns{} конфига. DNS-правила собирают rule-set ДО маршрутных (как оракул).
 pub fn build_dns(

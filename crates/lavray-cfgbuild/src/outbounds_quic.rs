@@ -6,9 +6,9 @@
 use crate::error::{Error, Result};
 use crate::filekeys::reject_file_keys;
 use crate::hy2ports::hysteria2_server_ports;
-use crate::util::{obj, split_csv, Obj};
+use crate::util::{Obj, obj, split_csv};
 use lavray_model::{Detail, Profile};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Общий TLS-блок QUICBean (hysteria2/tuic).
 fn quic_tls(

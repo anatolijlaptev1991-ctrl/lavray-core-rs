@@ -5,7 +5,7 @@
 //! гарды удаления. Regression-first: каждый баг аудита → тест навсегда.
 
 use lavray_model::{Group, GroupKind, SubscriptionInfo};
-use lavray_store::{Store, DEFAULT_GROUP_ID};
+use lavray_store::{DEFAULT_GROUP_ID, Store};
 use serde_json::json;
 use std::collections::BTreeMap;
 

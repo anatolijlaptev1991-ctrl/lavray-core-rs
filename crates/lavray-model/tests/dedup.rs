@@ -3,7 +3,7 @@
 //! Тесты dedup-ключа (порт Go model/dedupkey.go): один и тот же сервер → один
 //! ключ; переименование/статистика сервер другим не делают.
 
-use lavray_model::{dedup_key, Profile, ProfileType};
+use lavray_model::{Profile, ProfileType, dedup_key};
 
 fn server(addr: &str, port: i64) -> Profile {
     Profile {

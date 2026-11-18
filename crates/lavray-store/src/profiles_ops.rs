@@ -5,7 +5,7 @@
 //! ради трещотки размеров.
 
 use crate::profile_scan::scan_profile;
-use crate::profiles::{null_str, PROFILE_COLS, SORT_KEY_STEP};
+use crate::profiles::{PROFILE_COLS, SORT_KEY_STEP, null_str};
 use crate::{Result, Store, StoreError};
 use lavray_model::{Profile, TestResult, TrafficCounters};
 use rusqlite::params;

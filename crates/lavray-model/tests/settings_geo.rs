@@ -5,7 +5,7 @@
 //! geo_false_positive_test.go).
 
 use lavray_model::{
-    backup_excluded, detect_geo, setting_descriptors, setting_readers, SETTING_UPDATE_ROOT_VERSION,
+    SETTING_UPDATE_ROOT_VERSION, backup_excluded, detect_geo, setting_descriptors, setting_readers,
 };
 
 #[test]

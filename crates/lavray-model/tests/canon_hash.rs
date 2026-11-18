@@ -4,8 +4,8 @@
 //! Паритет Go model/canonjson.go, customhash.go. Dedup — в dedup.rs.
 
 use lavray_model::{
-    canonical_json, custom_confirmed, custom_fields_hash, has_custom_content, CustomDetail, Detail,
-    Profile, ProfileType,
+    CustomDetail, Detail, Profile, ProfileType, canonical_json, custom_confirmed,
+    custom_fields_hash, has_custom_content,
 };
 
 // ---- canonjson ----

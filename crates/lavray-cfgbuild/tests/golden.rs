@@ -5,9 +5,9 @@
 //! `Gxx.want.json` = MarshalIndent (2 пробела, ключи сортированы) + "\n".
 //! Сравнение байт-в-байт. Фикстуры скопированы из Go-поставки без изменений.
 
-use lavray_cfgbuild::{build, marshal_indent, BuildRequest, BuildSettings, Result};
+use lavray_cfgbuild::{BuildRequest, BuildSettings, Result, build, marshal_indent};
 use lavray_model::{Group, Profile};
-use lavray_presets::{builtin_presets, Preset};
+use lavray_presets::{Preset, builtin_presets};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::PathBuf;

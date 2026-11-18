@@ -6,8 +6,8 @@
 
 use crate::error::{Error, Result};
 use crate::settings::BuildSettings;
-use crate::util::{goos_of, obj, Obj};
-use serde_json::{json, Value};
+use crate::util::{Obj, goos_of, obj};
+use serde_json::{Value, json};
 
 const TUN_IPV4: &str = "172.18.0.1/30";
 const TUN_IPV6: &str = "fd4c:4156:5259::1/126";
@@ -34,7 +34,9 @@ pub fn build_inbounds(st: &BuildSettings, for_test: bool) -> Result<Vec<Value>> 
         {
             return Err(Error::invalid(
                 "inbound.address",
-                format!("non-loopback inbound address {listen:?} requires inbound.auth.user and inbound.auth.pass (FR-UI-279)"),
+                format!(
+                    "non-loopback inbound address {listen:?} requires inbound.auth.user and inbound.auth.pass (FR-UI-279)"
+                ),
             ));
         }
         let mut inb = obj();

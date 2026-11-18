@@ -4,7 +4,7 @@
 //! Приложение А REQUIREMENTS + миграция core-port-plan §5.4).
 //! extraCore.core_map NekoBox НЕ переносится (DROP, FR-UI-175).
 
-use super::{SettingDescriptor, SettingType, SETTING_HWID_ID};
+use super::{SETTING_HWID_ID, SettingDescriptor, SettingType};
 use SettingType::{Bool, Int, String as Str, StringList};
 
 /// Базовые дескрипторы настроек.

@@ -149,8 +149,7 @@ pub(crate) fn custom_from_proto(t: ProfileType, d: &pb::CustomDetail) -> m::Cust
         command: d
             .command
             .as_deref()
-            .map(|s| s.split_whitespace().map(str::to_string).collect())
-            .unwrap_or_default(),
+            .map_or_default(|s| s.split_whitespace().map(str::to_string).collect()),
         config_suffix: d.config_suffix.clone().unwrap_or_default(),
         config_template: d.config_template.clone().unwrap_or_default(),
         mapping_port: d.mapping_port.map_or(0, i64::from),

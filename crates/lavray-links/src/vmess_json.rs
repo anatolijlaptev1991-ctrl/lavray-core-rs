@@ -5,13 +5,13 @@
 //! (порт 0), P2-5 (aid 0..65535), P1-1 (stream-импорт из JSON).
 
 use crate::caps::{
-    canonical_network, normalize_alpn, normalize_security_none, NETWORKS, UTLS_FPS,
-    VMESS_SECURITIES,
+    NETWORKS, UTLS_FPS, VMESS_SECURITIES, canonical_network, normalize_alpn,
+    normalize_security_none,
 };
 use crate::stream::{sni_from_host, validate_stream_caps};
 use crate::util::{
-    canonical_host, check_field_len, require_port, LinkError, Result, MAX_FIELD_LENGTH,
-    MAX_REMARK_LENGTH,
+    LinkError, MAX_FIELD_LENGTH, MAX_REMARK_LENGTH, Result, canonical_host, check_field_len,
+    require_port,
 };
 use lavray_model::{Detail, Profile, ProfileType, StreamSettings, VMessDetail};
 use serde::Deserialize;

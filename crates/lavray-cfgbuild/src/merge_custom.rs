@@ -9,7 +9,7 @@ use crate::error::{Error, Result};
 use crate::filekeys::{merge_key_base, reject_file_keys};
 use crate::merge::{cfg_outbounds_any, merge_json};
 use crate::util::Obj;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 const ALLOWED_ROOT_KEYS: &[&str] = &["route", "dns", "outbounds", "log", "experimental"];
 const CACHE_FILE_KEYS: &[&str] = &[
@@ -48,7 +48,9 @@ pub fn merge_custom_config(
         if !ALLOWED_ROOT_KEYS.contains(&base.as_str()) {
             return Err(Error::invalid(
                 base.clone(),
-                format!("key {base:?} is not allowed in custom_config (allowlist: route, dns, outbounds, log.level, experimental.cache_file)"),
+                format!(
+                    "key {base:?} is not allowed in custom_config (allowlist: route, dns, outbounds, log.level, experimental.cache_file)"
+                ),
             ));
         }
         if matches!(base.as_str(), "route" | "dns" | "outbounds") {
@@ -122,7 +124,9 @@ fn merge_experimental_key(cfg: &mut Obj, key: &str, val: &Value) -> Result<()> {
                 let k = format!("experimental.cache_file.{}", merge_key_base(field));
                 return Err(Error::invalid(
                     k.clone(),
-                    format!("key {k:?} is not allowed in custom_config (cache_file accepts only enabled, cache_id, store_fakeip, store_rdrc, store_dns, rdrc_timeout; the cache file path is set by LAVRay)"),
+                    format!(
+                        "key {k:?} is not allowed in custom_config (cache_file accepts only enabled, cache_id, store_fakeip, store_rdrc, store_dns, rdrc_timeout; the cache file path is set by LAVRay)"
+                    ),
                 ));
             }
         }

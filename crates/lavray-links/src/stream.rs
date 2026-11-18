@@ -5,10 +5,10 @@
 //! больше не теряются при импорте vless/trojan/vmess/socks-http.
 
 use crate::caps::{
-    canonical_network, normalize_alpn, normalize_security_tls, parse_bool_param, NETWORKS, UTLS_FPS,
+    NETWORKS, UTLS_FPS, canonical_network, normalize_alpn, normalize_security_tls, parse_bool_param,
 };
 use crate::util::{
-    check_field_len, is_ip_addr, query_get, LinkError, Result, MAX_FIELD_LENGTH, MAX_XHTTP_EXTRA,
+    LinkError, MAX_FIELD_LENGTH, MAX_XHTTP_EXTRA, Result, check_field_len, is_ip_addr, query_get,
 };
 use lavray_model::StreamSettings;
 
@@ -23,9 +23,7 @@ pub fn apply_stream_from_query(
     let get = |k: &str| query_get(pairs, k);
 
     // сеть
-    let mut netw = get("type")
-        .map(|v| v.trim().to_lowercase())
-        .unwrap_or_default();
+    let mut netw = get("type").map_or_default(|v| v.trim().to_lowercase());
     if netw.is_empty() {
         netw = "tcp".into();
     }

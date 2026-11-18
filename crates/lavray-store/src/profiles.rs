@@ -148,9 +148,5 @@ impl Store {
 }
 
 pub(crate) fn null_str(s: &str) -> Option<&str> {
-    if s.is_empty() {
-        None
-    } else {
-        Some(s)
-    }
+    if s.is_empty() { None } else { Some(s) }
 }

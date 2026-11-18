@@ -2,7 +2,7 @@
 
 //! Тесты effective_process_rules (паритет Go presets/process_rules.go).
 
-use lavray_presets::{effective_process_rules, Preset, ProcessRule, Routing};
+use lavray_presets::{Preset, ProcessRule, Routing, effective_process_rules};
 
 fn preset_with(rules: Vec<ProcessRule>) -> Preset {
     Preset {

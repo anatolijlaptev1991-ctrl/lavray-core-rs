@@ -61,7 +61,7 @@ pub fn parse_url(s: &str) -> Result<Url> {
 
 /// Имя из фрагмента (`#name`), URL-декодированное.
 pub fn frag_name(u: &Url) -> String {
-    u.fragment().map(percent_decode).unwrap_or_default()
+    u.fragment().map_or_default(percent_decode)
 }
 
 /// Пары query из RawQuery вручную: %XX декодируется БЕЗ «+»→пробел (QUrlQuery /

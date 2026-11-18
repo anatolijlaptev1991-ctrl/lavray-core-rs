@@ -6,7 +6,7 @@
 use crate::build::LinkBuilder;
 use crate::build_proto::append_stream_query;
 use crate::caps::{
-    validate_duration, validate_server_ports, TUIC_CONGESTIONS, TUIC_RELAY_MODES, VMESS_SECURITIES,
+    TUIC_CONGESTIONS, TUIC_RELAY_MODES, VMESS_SECURITIES, validate_duration, validate_server_ports,
 };
 use crate::util::{LinkError, Result};
 use base64::Engine;

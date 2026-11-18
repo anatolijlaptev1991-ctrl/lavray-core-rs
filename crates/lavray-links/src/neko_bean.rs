@@ -8,7 +8,7 @@ use crate::caps::{NETWORKS, UTLS_FPS};
 use crate::neko::{NekoBean, NekoStream};
 use crate::neko_detail::build_detail;
 use crate::stream::validate_stream_caps;
-use crate::util::{check_field_len, LinkError, Result, MAX_REMARK_LENGTH};
+use crate::util::{LinkError, MAX_REMARK_LENGTH, Result, check_field_len};
 use lavray_model::{Profile, StreamSettings};
 
 fn stream_from_neko(ns: &NekoStream) -> StreamSettings {

@@ -3,12 +3,12 @@
 //! Тесты ProfileService (волна 6): round-trip конверсий model↔proto для всех
 //! Detail-типов, CRUD RPC поверх in-memory store.
 
-use lavray_api::profile_convert::{profile_from_proto, profile_to_proto};
 use lavray_api::ProfileServiceImpl;
+use lavray_api::profile_convert::{profile_from_proto, profile_to_proto};
 use lavray_model::{self as m, Detail, Profile, ProfileType, StreamSettings};
 use lavray_proto::v1 as pb;
 use lavray_proto::v1::profile_service_server::ProfileService;
-use lavray_store::{Store, DEFAULT_GROUP_ID};
+use lavray_store::{DEFAULT_GROUP_ID, Store};
 use std::sync::{Arc, Mutex};
 use tonic::Request;
 

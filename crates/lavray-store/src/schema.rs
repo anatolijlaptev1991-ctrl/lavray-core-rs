@@ -100,10 +100,10 @@ pub fn migrate(conn: &Connection) -> rusqlite::Result<()> {
         }
         for stmt in *stmts {
             // ALTER TABLE ADD COLUMN может уже существовать при повторе — игнорируем.
-            if let Err(e) = conn.execute_batch(stmt) {
-                if !stmt.starts_with("ALTER TABLE") {
-                    return Err(e);
-                }
+            if let Err(e) = conn.execute_batch(stmt)
+                && !stmt.starts_with("ALTER TABLE")
+            {
+                return Err(e);
             }
         }
         conn.execute(

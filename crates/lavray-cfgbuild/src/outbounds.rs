@@ -6,8 +6,8 @@
 use crate::error::{Error, Result};
 use crate::outbounds_quic::{build_custom_internal, build_hysteria2, build_tuic};
 use crate::settings::BuildSettings;
-use crate::stream::{apply_stream_settings, StreamCaps};
-use crate::util::{obj, Obj};
+use crate::stream::{StreamCaps, apply_stream_settings};
+use crate::util::{Obj, obj};
 use lavray_model::{Detail, Profile, ProfileType};
 use serde_json::json;
 

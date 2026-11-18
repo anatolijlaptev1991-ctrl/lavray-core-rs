@@ -5,7 +5,7 @@
 //! ключ → INVALID_ARGUMENT; aggregated-флаги перезапуска (FR-UI-062/063/064).
 
 use crate::convert::{descriptor_to_proto, json_to_setting_value, setting_value_to_json};
-use lavray_model::{setting_descriptors, SETTING_GROUPS};
+use lavray_model::{SETTING_GROUPS, setting_descriptors};
 use lavray_proto::v1 as pb;
 use lavray_proto::v1::settings_service_server::SettingsService;
 use lavray_store::Store;

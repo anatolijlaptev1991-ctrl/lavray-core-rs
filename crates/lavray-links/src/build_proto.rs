@@ -5,7 +5,7 @@
 
 use crate::build::LinkBuilder;
 use crate::caps::{SS_METHODS, VLESS_FLOWS};
-use crate::util::{check_field_len, encode_b64_url, LinkError, Result, MAX_PLUGIN_LENGTH};
+use crate::util::{LinkError, MAX_PLUGIN_LENGTH, Result, check_field_len, encode_b64_url};
 use lavray_model::{Detail, Profile, ProfileType, StreamSettings};
 
 pub(crate) fn build_socks_http(p: &Profile) -> Result<String> {

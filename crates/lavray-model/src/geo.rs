@@ -71,15 +71,15 @@ pub fn detect_geo(name: &str, address: &str) -> String {
         return best.to_string();
     }
     // TLD адреса (только двухбуквенные национальные, кроме служебных).
-    if let Some(i) = address.rfind('.') {
-        if i + 2 < address.len() {
-            let tld = address[i + 1..].to_lowercase();
-            if tld.len() == 2
-                && alias_code(&tld).is_none()
-                && !matches!(tld.as_str(), "io" | "to" | "me" | "tv" | "cc" | "ai")
-            {
-                return tld;
-            }
+    if let Some(i) = address.rfind('.')
+        && i + 2 < address.len()
+    {
+        let tld = address[i + 1..].to_lowercase();
+        if tld.len() == 2
+            && alias_code(&tld).is_none()
+            && !matches!(tld.as_str(), "io" | "to" | "me" | "tv" | "cc" | "ai")
+        {
+            return tld;
         }
     }
     String::new()

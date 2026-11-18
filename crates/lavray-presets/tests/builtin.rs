@@ -2,7 +2,7 @@
 
 //! Тесты встроенных пресетов: загрузка, валидация, ключевые правила lav-ru rev3.
 
-use lavray_presets::{builtin_presets, builtin_source, load_preset, BUILTIN_FILES};
+use lavray_presets::{BUILTIN_FILES, builtin_presets, builtin_source, load_preset};
 
 #[test]
 fn all_five_builtins_load_and_validate() {
@@ -52,11 +52,13 @@ fn lav_ru_revision_3_direct_domains() {
 fn lav_ru_zai_stays_proxy() {
     let presets = builtin_presets().unwrap();
     let lav_ru = presets.iter().find(|p| p.id == "lav-ru").unwrap();
-    assert!(lav_ru
-        .routing
-        .proxy_domain
-        .iter()
-        .any(|x| x == "domain:z.ai"));
+    assert!(
+        lav_ru
+            .routing
+            .proxy_domain
+            .iter()
+            .any(|x| x == "domain:z.ai")
+    );
 }
 
 #[test]

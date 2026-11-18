@@ -3,7 +3,7 @@
 //! Тесты валидации звена цепочки (validate_ent) и ошибок сборки Build.
 
 use lavray_cfgbuild::validate::{unsupported_reason, validate_ent};
-use lavray_cfgbuild::{build, BuildRequest};
+use lavray_cfgbuild::{BuildRequest, build};
 use lavray_model::{CustomDetail, Detail, Profile, ProfileType, StreamSettings};
 
 fn vmess_profile() -> Profile {

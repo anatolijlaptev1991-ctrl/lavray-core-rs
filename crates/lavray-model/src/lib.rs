@@ -21,7 +21,7 @@ mod profile_serde;
 pub mod settings;
 pub mod stream;
 
-pub use canonjson::{canonical_json, CanonError, MAX_CANON_BYTES};
+pub use canonjson::{CanonError, MAX_CANON_BYTES, canonical_json};
 pub use customhash::{
     custom_confirmed, custom_fields_hash, has_custom_content, internal_full_json,
 };
@@ -33,15 +33,15 @@ pub use detail::{
 pub use geo::detect_geo;
 pub use group::{Group, GroupKind, SubscriptionInfo};
 pub use profile::{Profile, ProfileType, TestResult, TrafficCounters};
-pub use settings::readers::{setting_readers, ReaderKind, SettingReader};
+pub use settings::readers::{ReaderKind, SettingReader, setting_readers};
 pub use settings::update::{
     SETTING_UPDATE_LAST_CHECKED, SETTING_UPDATE_LAST_URL, SETTING_UPDATE_ROOT_JSON,
     SETTING_UPDATE_ROOT_VERSION, SETTING_UPDATE_SERIAL_BETA, SETTING_UPDATE_SERIAL_STABLE,
     SETTING_UPDATE_TIMESTAMP_VERSION,
 };
 pub use settings::{
-    backup_excluded, setting_descriptors, SettingDescriptor, SettingType, SETTING_GROUPS,
-    SETTING_HWID_ID,
+    SETTING_GROUPS, SETTING_HWID_ID, SettingDescriptor, SettingType, backup_excluded,
+    setting_descriptors,
 };
 pub use stream::StreamSettings;
 

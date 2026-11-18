@@ -27,10 +27,10 @@ pub mod process_rules;
 pub mod types;
 pub mod validate;
 
-pub use builtin::{builtin_presets, builtin_source, BUILTIN_FILES};
-pub use custom::{new_custom_from, prepare_user, SCHEMA_REF};
+pub use builtin::{BUILTIN_FILES, builtin_presets, builtin_source};
+pub use custom::{SCHEMA_REF, new_custom_from, prepare_user};
 pub use customrules::{
-    normalize_custom_rules, parse_custom_rules, CustomRulesError, MAX_CUSTOM_RULES_BYTES,
+    CustomRulesError, MAX_CUSTOM_RULES_BYTES, normalize_custom_rules, parse_custom_rules,
 };
 pub use load::load_preset;
 pub use localized::Localized;

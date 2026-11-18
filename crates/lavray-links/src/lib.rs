@@ -24,7 +24,7 @@ pub mod util;
 pub mod vmess;
 mod vmess_json;
 
-pub use build::{build_link, build_link_with_options, Options};
+pub use build::{Options, build_link, build_link_with_options};
 pub use util::{LinkError, Result};
 
 use lavray_model::Profile;

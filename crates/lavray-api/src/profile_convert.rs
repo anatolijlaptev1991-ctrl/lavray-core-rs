@@ -168,8 +168,7 @@ pub fn profile_from_proto(p: &pb::Profile) -> Profile {
         test_result: p
             .test_result
             .as_ref()
-            .map(test_result_from_proto)
-            .unwrap_or_default(),
+            .map_or_default(test_result_from_proto),
         traffic: p
             .traffic
             .as_ref()

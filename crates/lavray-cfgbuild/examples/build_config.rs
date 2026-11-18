@@ -6,9 +6,9 @@
 //! for_test/for_export). CI использует его как smoke реального библиотечного
 //! кода на release-артефакте — в духе smoke lavray-linux (install + test -x).
 
-use lavray_cfgbuild::{build, marshal_indent, BuildRequest, BuildSettings};
+use lavray_cfgbuild::{BuildRequest, BuildSettings, build, marshal_indent};
 use lavray_model::{Group, Profile};
-use lavray_presets::{builtin_presets, Preset};
+use lavray_presets::{Preset, builtin_presets};
 use std::collections::HashMap;
 
 #[derive(serde::Deserialize)]

@@ -4,12 +4,12 @@
 //! parseHysteria2/parseTUIC. Фикс P1-2 (пароль user:pass), P2-2/P2-3 (поля).
 
 use crate::caps::{
-    normalize_alpn, parse_bool_param, validate_duration, validate_server_ports, TUIC_CONGESTIONS,
-    TUIC_RELAY_MODES,
+    TUIC_CONGESTIONS, TUIC_RELAY_MODES, normalize_alpn, parse_bool_param, validate_duration,
+    validate_server_ports,
 };
 use crate::util::{
-    apply_default_port, check_field_len, frag_name, host_port, parse_url, query_get, query_pairs,
-    user_info, LinkError, Result, MAX_FIELD_LENGTH, MAX_REMARK_LENGTH,
+    LinkError, MAX_FIELD_LENGTH, MAX_REMARK_LENGTH, Result, apply_default_port, check_field_len,
+    frag_name, host_port, parse_url, query_get, query_pairs, user_info,
 };
 use lavray_model::{Detail, Hysteria2Detail, Profile, ProfileType, TuicDetail};
 
@@ -37,12 +37,13 @@ pub fn parse_hysteria2(s: &str) -> Result<Profile> {
         password,
         ..Default::default()
     };
-    if let Some(v) = get("obfs") {
-        if !v.is_empty() && v != "salamander" {
-            return Err(LinkError(format!(
-                "hy2: obfs {v:?} не поддерживается (только salamander)"
-            )));
-        }
+    if let Some(v) = get("obfs")
+        && !v.is_empty()
+        && v != "salamander"
+    {
+        return Err(LinkError(format!(
+            "hy2: obfs {v:?} не поддерживается (только salamander)"
+        )));
     }
     if let Some(v) = get("obfs-password") {
         check_field_len("obfs-password", v, MAX_FIELD_LENGTH)?;

@@ -41,18 +41,10 @@ pub(crate) fn scan_group(r: &rusqlite::Row<'_>) -> rusqlite::Result<Group> {
 
 /// Пустая строка → NULL (паритет Go nullableString).
 pub(crate) fn null_str(s: &str) -> Option<&str> {
-    if s.is_empty() {
-        None
-    } else {
-        Some(s)
-    }
+    if s.is_empty() { None } else { Some(s) }
 }
 
 /// 0 мс → NULL («никогда», паритет Go nullableMs).
 pub(crate) fn null_ms(ms: i64) -> Option<i64> {
-    if ms == 0 {
-        None
-    } else {
-        Some(ms)
-    }
+    if ms == 0 { None } else { Some(ms) }
 }

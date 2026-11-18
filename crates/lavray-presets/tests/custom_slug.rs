@@ -3,7 +3,7 @@
 //! Тесты slug/mint_id/new_custom_from/prepare_user (паритет Go presets
 //! slug_test.go, custom_test.go, limits_test.go).
 
-use lavray_presets::{mint_id, new_custom_from, prepare_user, slugify, Preset, Routing};
+use lavray_presets::{Preset, Routing, mint_id, new_custom_from, prepare_user, slugify};
 
 #[test]
 fn slug_latin_and_cyrillic() {

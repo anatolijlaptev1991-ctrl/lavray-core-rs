@@ -6,9 +6,9 @@
 
 use crate::caps::SS_METHODS;
 use crate::util::{
-    check_field_len, decode_b64_strict, frag_name, host_port, parse_url, query_get, query_pairs,
-    require_port, user_info, LinkError, Result, MAX_FIELD_LENGTH, MAX_PLUGIN_LENGTH,
-    MAX_REMARK_LENGTH,
+    LinkError, MAX_FIELD_LENGTH, MAX_PLUGIN_LENGTH, MAX_REMARK_LENGTH, Result, check_field_len,
+    decode_b64_strict, frag_name, host_port, parse_url, query_get, query_pairs, require_port,
+    user_info,
 };
 use lavray_model::{Detail, Profile, ProfileType, ShadowsocksDetail};
 
@@ -58,9 +58,8 @@ fn parse_sip002(s: &str) -> Result<(Profile, ShadowsocksDetail)> {
         (user, pass)
     };
     let pairs = query_pairs(&u);
-    let plugin = query_get(&pairs, "plugin")
-        .map(|v| v.replace("simple-obfs;", "obfs-local;"))
-        .unwrap_or_default();
+    let plugin =
+        query_get(&pairs, "plugin").map_or_default(|v| v.replace("simple-obfs;", "obfs-local;"));
     Ok((
         Profile {
             r#type: ProfileType::Shadowsocks,
@@ -95,9 +94,8 @@ fn parse_v2rayn(body: &str) -> Result<(Profile, ShadowsocksDetail)> {
     }
     let (method, password, _) = user_info(&u);
     let pairs = query_pairs(&u);
-    let plugin = query_get(&pairs, "plugin")
-        .map(|v| v.replace("simple-obfs;", "obfs-local;"))
-        .unwrap_or_default();
+    let plugin =
+        query_get(&pairs, "plugin").map_or_default(|v| v.replace("simple-obfs;", "obfs-local;"));
     Ok((
         Profile {
             r#type: ProfileType::Shadowsocks,

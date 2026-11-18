@@ -6,7 +6,7 @@
 use lavray_cfgbuild::dns::make_dns_server;
 use lavray_cfgbuild::hy2ports::hysteria2_server_ports;
 use lavray_cfgbuild::merge::merge_json;
-use lavray_cfgbuild::util::{normalize_log_level, Obj};
+use lavray_cfgbuild::util::{Obj, normalize_log_level};
 use serde_json::json;
 
 // ---- make_dns_server ----

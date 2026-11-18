@@ -2,7 +2,7 @@
 
 //! Тесты StreamSettings: канонический JSON round-trip, omitempty, is_internal_full.
 
-use lavray_model::{is_internal_full, CustomDetail, Detail, Profile, ProfileType, StreamSettings};
+use lavray_model::{CustomDetail, Detail, Profile, ProfileType, StreamSettings, is_internal_full};
 
 #[test]
 fn stream_round_trip() {

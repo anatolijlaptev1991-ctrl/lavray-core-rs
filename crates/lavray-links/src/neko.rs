@@ -5,7 +5,7 @@
 //! c_cfg/c_out ЭКСПОРТИРУЮТСЯ, но на ИМПОРТЕ отбрасываются (LNB-25/FR-UI-257).
 
 use crate::neko_bean::profile_from_bean;
-use crate::util::{decode_b64_any, LinkError, Result};
+use crate::util::{LinkError, Result, decode_b64_any};
 use serde::Deserialize;
 
 /// JSON bean NekoBox (ключи fmt/*Bean.hpp; пустые значения не пишутся).

@@ -4,16 +4,16 @@
 //! buildChainOutbounds + needMuxFor). Теги: index 0 → "proxy", последний →
 //! "g-<id>", промежуточные → "c-<chainId>-<id>"; detour к предыдущему.
 
+use crate::BuildResult;
 use crate::error::{Error, Result};
 use crate::filekeys::reject_file_keys;
 use crate::merge::merge_json;
 use crate::outbounds::build_outbound;
 use crate::settings::BuildSettings;
-use crate::util::{contains_str, is_ip_addr, Obj};
+use crate::util::{Obj, contains_str, is_ip_addr};
 use crate::validate::validate_ent;
-use crate::BuildResult;
 use lavray_model::{Detail, Group, Profile, ProfileType};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Разрешить цепочку в список профилей (порядок трафика: ents[0] — последняя
 /// миля) + групповой front proxy (порт resolveChain).
@@ -29,14 +29,13 @@ pub fn resolve_chain(
             "цепочка пуста: нет профилей для outbound «proxy»",
         ));
     }
-    if let Some(g) = group {
-        if let Some(fid) = g.front_proxy_id {
-            if fid >= 0 {
-                let f = lookup(fid)
-                    .map_err(|_| Error::precondition("chain", "front proxy ent not found"))?;
-                ents.extend(resolve_one(&f, lookup)?);
-            }
-        }
+    if let Some(g) = group
+        && let Some(fid) = g.front_proxy_id
+        && fid >= 0
+    {
+        let f =
+            lookup(fid).map_err(|_| Error::precondition("chain", "front proxy ent not found"))?;
+        ents.extend(resolve_one(&f, lookup)?);
     }
     Ok(ents)
 }
@@ -91,10 +90,10 @@ pub fn build_chain_outbounds(
         if index != 0 {
             res.ignore_conn_tags.push(tag_out.clone());
         }
-        if index > 0 {
-            if let Some(last) = outbounds.last_mut() {
-                last.insert("detour".into(), json!(tag_out));
-            }
+        if index > 0
+            && let Some(last) = outbounds.last_mut()
+        {
+            last.insert("detour".into(), json!(tag_out));
         }
         if need_global {
             if global_profiles.contains(&ent.id) {
@@ -130,16 +129,13 @@ pub fn build_chain_outbounds(
         }
 
         let mut server_address = ent.address.clone();
-        if ent.r#type == ProfileType::CustomOutbound {
-            if let Some(Detail::Custom(d)) = &ent.detail {
-                if let Ok(o) = serde_json::from_str::<Obj>(&d.outbound_json) {
-                    if let Some(s) = o.get("server").and_then(Value::as_str) {
-                        if !s.is_empty() {
-                            server_address = s.to_string();
-                        }
-                    }
-                }
-            }
+        if ent.r#type == ProfileType::CustomOutbound
+            && let Some(Detail::Custom(d)) = &ent.detail
+            && let Ok(o) = serde_json::from_str::<Obj>(&d.outbound_json)
+            && let Some(s) = o.get("server").and_then(Value::as_str)
+            && !s.is_empty()
+        {
+            server_address = s.to_string();
         }
         if !server_address.is_empty() && !is_ip_addr(&server_address) {
             let full = format!("full:{server_address}");

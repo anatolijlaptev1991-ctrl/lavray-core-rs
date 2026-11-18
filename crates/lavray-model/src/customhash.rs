@@ -6,8 +6,8 @@
 //! подтверждение сама. H = sha256("LAVCF1\0" ‖ seg(outbound) ‖ 0 ‖ seg(config)
 //! [‖ 0 ‖ canon(full_config) для internal-full]).
 
-use crate::canonjson::{canonical_json, CanonError};
-use crate::{is_internal_full, Detail, Profile};
+use crate::canonjson::{CanonError, canonical_json};
+use crate::{Detail, Profile, is_internal_full};
 use sha2::{Digest, Sha256};
 
 /// Префикс версии формулы: смена формулы меняет все хэши.

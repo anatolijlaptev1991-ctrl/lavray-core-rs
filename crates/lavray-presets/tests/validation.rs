@@ -2,7 +2,7 @@
 
 //! Тесты валидации пресета (SCHEMA §4) — явные и неявные сценарии ошибок.
 
-use lavray_presets::{load_preset, DnsBlock, Localized, Preset, ProcessRule, Routing};
+use lavray_presets::{DnsBlock, Localized, Preset, ProcessRule, Routing, load_preset};
 
 /// Минимальный валидный пресет для мутаций в тестах.
 fn valid() -> Preset {
@@ -81,11 +81,12 @@ fn bad_def_outbound_rejected() {
 fn bad_domain_strategy_rejected() {
     let mut p = valid();
     p.routing.outbound_domain_strategy = "ipv9_only".into();
-    assert!(p
-        .validate()
-        .unwrap_err()
-        .0
-        .contains("outbound_domain_strategy"));
+    assert!(
+        p.validate()
+            .unwrap_err()
+            .0
+            .contains("outbound_domain_strategy")
+    );
 }
 
 #[test]
@@ -120,11 +121,12 @@ fn domain_prefix_in_ip_field_rejected() {
 fn empty_prefix_value_rejected() {
     let mut p = valid();
     p.routing.proxy_domain = vec!["domain:".into()];
-    assert!(p
-        .validate()
-        .unwrap_err()
-        .0
-        .contains("пустое значение после префикса"));
+    assert!(
+        p.validate()
+            .unwrap_err()
+            .0
+            .contains("пустое значение после префикса")
+    );
 }
 
 #[test]
@@ -185,11 +187,12 @@ fn process_rule_unknown_platform_rejected() {
         outbound: "direct".into(),
         process_names: vec!["app.exe".into()],
     }];
-    assert!(p
-        .validate()
-        .unwrap_err()
-        .0
-        .contains("неизвестная платформа"));
+    assert!(
+        p.validate()
+            .unwrap_err()
+            .0
+            .contains("неизвестная платформа")
+    );
 }
 
 #[test]

@@ -3,7 +3,7 @@
 //! Построение Detail из nekoBean для QUIC/custom типов (порт Go `links/neko.go`
 //! profileFromBean). Вынесено из neko_detail.rs ради трещотки размеров.
 
-use crate::caps::{validate_duration, validate_server_ports, TUIC_CONGESTIONS, TUIC_RELAY_MODES};
+use crate::caps::{TUIC_CONGESTIONS, TUIC_RELAY_MODES, validate_duration, validate_server_ports};
 use crate::neko::NekoBean;
 use crate::util::{LinkError, Result};
 use lavray_model::{CustomDetail, Detail, Hysteria2Detail, ProfileType, TuicDetail};

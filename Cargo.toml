@@ -22,8 +22,8 @@ members = ["crates/*"]
 
 [workspace.package]
 version = "0.9.3"
-edition = "2021"
-rust-version = "1.85"
+edition = "2024"
+rust-version = "1.100"
 license = "GPL-3.0-only"
 repository = "https://github.com/anatolijlaptev1991-ctrl/lavray-core-rs"
 authors = ["LAVRay <lavray@users.noreply.github.com>"]
@@ -32,7 +32,6 @@ authors = ["LAVRay <lavray@users.noreply.github.com>"]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
-anyhow = "1"
 base64 = "0.22"
 url = "2"
 sha2 = "0.10"
@@ -62,7 +61,7 @@ doc_markdown = "allow"
 struct_excessive_bools = "allow"
 
 [profile.release]
-lto = "thin"
+lto = "fat"
 codegen-units = 1
 strip = true
 panic = "abort"

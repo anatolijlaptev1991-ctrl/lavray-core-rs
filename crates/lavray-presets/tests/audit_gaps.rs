@@ -3,7 +3,7 @@
 //! Тесты, закрывающие пробелы покрытия аудита волны 1 (P2/P3): позитивные
 //! geoip/geosite, границы revision, глубокая вложенность JSON, гард builtin.
 
-use lavray_presets::{builtin_presets, load_preset, DnsBlock, Localized, Preset, Routing};
+use lavray_presets::{DnsBlock, Localized, Preset, Routing, builtin_presets, load_preset};
 
 fn base() -> Preset {
     let mut p = Preset {
@@ -128,11 +128,12 @@ fn revision_max_valid() {
 fn invalid_remote_query_strategy_rejected() {
     let mut p = base();
     p.dns.remote_query_strategy = "ipv9".into();
-    assert!(p
-        .validate()
-        .unwrap_err()
-        .0
-        .contains("remote_query_strategy"));
+    assert!(
+        p.validate()
+            .unwrap_err()
+            .0
+            .contains("remote_query_strategy")
+    );
 }
 
 #[test]

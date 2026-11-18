@@ -14,7 +14,9 @@ fn roundtrip(link: &str) -> Profile {
 
 #[test]
 fn vmess_v2rayn_roundtrip() {
-    let p = roundtrip("vmess://eyJhZGQiOiJoLmNvbSIsInBvcnQiOiI0NDMiLCJpZCI6InV1aWQiLCJhaWQiOiIwIiwic2N5IjoiYXV0byIsInBzIjoiTiJ9");
+    let p = roundtrip(
+        "vmess://eyJhZGQiOiJoLmNvbSIsInBvcnQiOiI0NDMiLCJpZCI6InV1aWQiLCJhaWQiOiIwIiwic2N5IjoiYXV0byIsInBzIjoiTiJ9",
+    );
     assert_eq!(p.r#type, ProfileType::VMess);
     assert_eq!(p.address, "h.com");
     assert_eq!(p.port, 443);

@@ -46,7 +46,9 @@ fn walk_file_keys(trail: &str, stack: &[String], v: &Value) -> Result<()> {
                     format!("{trail}.{base}")
                 };
                 if is_file_key(stack, &base, map, child) {
-                    let msg = format!("key {key:?} sets a file path; file paths are not allowed in custom config (put the contents inline, e.g. tls.certificate, or remove the key)");
+                    let msg = format!(
+                        "key {key:?} sets a file path; file paths are not allowed in custom config (put the contents inline, e.g. tls.certificate, or remove the key)"
+                    );
                     return Err(Error::invalid(key, msg));
                 }
                 let mut next = stack.to_vec();

@@ -6,8 +6,8 @@
 use crate::caps::VLESS_FLOWS;
 use crate::stream::{apply_stream_from_query, sni_from_host, validate_stream_caps};
 use crate::util::{
-    apply_default_port, check_field_len, frag_name, host_port, parse_url, query_get, query_pairs,
-    user_info, LinkError, Result, MAX_FIELD_LENGTH, MAX_REMARK_LENGTH,
+    LinkError, MAX_FIELD_LENGTH, MAX_REMARK_LENGTH, Result, apply_default_port, check_field_len,
+    frag_name, host_port, parse_url, query_get, query_pairs, user_info,
 };
 use lavray_model::{Detail, Profile, ProfileType, StreamSettings, TrojanVlessDetail};
 
@@ -39,15 +39,15 @@ pub fn parse(scheme: &str, s: &str) -> Result<Profile> {
     apply_stream_from_query(&mut st, &pairs, def_sec)
         .map_err(|e| LinkError(format!("{scheme}: {}", e.0)))?;
 
-    if scheme == "vless" {
-        if let Some(v) = query_get(&pairs, "flow") {
-            if !v.is_empty() && !VLESS_FLOWS.contains(&v) {
-                return Err(LinkError(format!(
-                    "{scheme}: flow {v:?} не поддерживается (допустимо: xtls-rprx-vision)"
-                )));
-            }
-            detail.flow = v.to_string();
+    if scheme == "vless"
+        && let Some(v) = query_get(&pairs, "flow")
+    {
+        if !v.is_empty() && !VLESS_FLOWS.contains(&v) {
+            return Err(LinkError(format!(
+                "{scheme}: flow {v:?} не поддерживается (допустимо: xtls-rprx-vision)"
+            )));
         }
+        detail.flow = v.to_string();
     }
     validate_stream_caps(&st)?;
     let name = frag_name(&u);

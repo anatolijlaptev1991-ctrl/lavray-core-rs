@@ -6,8 +6,8 @@
 //! адрес, порт, Detail, Stream и custom-поля; не входят имя, заметки, теги,
 //! избранное, страна, тест, трафик, id, группа, времена. Ключ — sha256.
 
-use crate::customhash::hex_encode;
 use crate::Profile;
+use crate::customhash::hex_encode;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 

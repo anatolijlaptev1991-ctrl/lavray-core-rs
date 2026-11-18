@@ -5,7 +5,7 @@
 //! custom_hash T-08B.
 
 use lavray_model::{Profile, ProfileType, TestResult, TrafficCounters};
-use lavray_store::{Store, DEFAULT_GROUP_ID};
+use lavray_store::{DEFAULT_GROUP_ID, Store};
 
 fn profile(name: &str) -> Profile {
     Profile {

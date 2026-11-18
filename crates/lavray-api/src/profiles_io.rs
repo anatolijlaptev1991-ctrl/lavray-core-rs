@@ -32,11 +32,11 @@ pub(crate) fn import_content(
         }
         if let Ok(mut p) = lavray_links::parse_link(line) {
             p.group_id = group_id;
-            if !r.preview_only.unwrap_or(false) {
-                if let Ok(id) = store.create_profile(&p) {
-                    p.id = id;
-                    added.push(id);
-                }
+            if !r.preview_only.unwrap_or(false)
+                && let Ok(id) = store.create_profile(&p)
+            {
+                p.id = id;
+                added.push(id);
             }
             parsed.push(profile_to_proto(&p));
         }

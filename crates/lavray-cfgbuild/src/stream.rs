@@ -4,9 +4,9 @@
 //! `cfgbuild/outbounds.go` applyStreamSettings/buildTransport/buildTLS).
 
 use crate::settings::BuildSettings;
-use crate::util::{obj, split_csv, Obj};
+use crate::util::{Obj, obj, split_csv};
 use lavray_model::StreamSettings;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Что из stream-настроек поддерживает тип outbound'а.
 #[derive(Default, Clone, Copy)]
@@ -25,15 +25,15 @@ pub fn apply_stream_settings(
 ) {
     let Some(s) = s else { return };
     let mut transport_type = String::new();
-    if caps.transport {
-        if let Some(tr) = build_transport(s) {
-            transport_type = tr
-                .get("type")
-                .and_then(Value::as_str)
-                .unwrap_or("")
-                .to_string();
-            out.insert("transport".into(), Value::Object(tr));
-        }
+    if caps.transport
+        && let Some(tr) = build_transport(s)
+    {
+        transport_type = tr
+            .get("type")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_string();
+        out.insert("transport".into(), Value::Object(tr));
     }
     // L10: непустой RealityPublicKey сам включает reality (иначе plaintext).
     if caps.tls {

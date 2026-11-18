@@ -3,7 +3,7 @@
 //! Тесты хранилища: миграции, Default-группа, CRUD групп/профилей/настроек.
 
 use lavray_model::{Detail, Group, GroupKind, Profile, ProfileType, VMessDetail};
-use lavray_store::{Store, DEFAULT_GROUP_ID};
+use lavray_store::{DEFAULT_GROUP_ID, Store};
 use serde_json::json;
 
 fn vmess_profile(group_id: i64) -> Profile {
@@ -26,9 +26,11 @@ fn vmess_profile(group_id: i64) -> Profile {
 fn migrations_create_default_group() {
     let store = Store::open_memory().unwrap();
     let groups = store.list_groups().unwrap();
-    assert!(groups
-        .iter()
-        .any(|g| g.id == DEFAULT_GROUP_ID && g.name == "Default"));
+    assert!(
+        groups
+            .iter()
+            .any(|g| g.id == DEFAULT_GROUP_ID && g.name == "Default")
+    );
 }
 
 #[test]

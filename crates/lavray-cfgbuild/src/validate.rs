@@ -66,13 +66,14 @@ pub fn validate_ent(p: &Profile) -> Result<()> {
             format!("profile {}: invalid port {}", p.id, p.port),
         ));
     }
-    if let Some(s) = &p.stream {
-        if s.security == "reality" && s.reality_public_key.trim().is_empty() {
-            return Err(Error::invalid(
-                "stream.reality_public_key",
-                format!("profile {}: security=reality требует public_key", p.id),
-            ));
-        }
+    if let Some(s) = &p.stream
+        && s.security == "reality"
+        && s.reality_public_key.trim().is_empty()
+    {
+        return Err(Error::invalid(
+            "stream.reality_public_key",
+            format!("profile {}: security=reality требует public_key", p.id),
+        ));
     }
     Ok(())
 }
