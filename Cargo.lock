@@ -668,6 +668,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "lavray-engine"
+version = "0.9.3"
+dependencies = [
+ "tokio",
+]
+
+[[package]]
 name = "lavray-links"
 version = "0.9.3"
 dependencies = [

@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# lavray-engine — прокси-движок LAVRay на Rust (волна 7; решение владельца
+# 18.11: полный Rust, без Go sing-box). 7a: mixed-инбаунд + outbound direct.
+
+[package]
+name = "lavray-engine"
+description = "LAVRay proxy engine (Rust): mixed inbound, outbounds, relay"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+tokio = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
+
+[lints]
+workspace = true
