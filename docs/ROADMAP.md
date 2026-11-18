@@ -63,12 +63,22 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
 - [x] presets: parse/normalize_custom_rules, effective_process_rules (+тесты).
 - [ ] Settings/geo, canonjson, dedupkey, customhash (остаток 2b).
 
-## Волна 6 — lavray-proto + lavray-api
+## Волна 6 — lavray-proto + lavray-api (идёт)
 
-- [ ] prost/tonic типы из `proto/lavray.proto` (12+ сервисов, ~80 RPC).
-- [ ] ConnectRPC/gRPC сервисы (Core/Profile/Subscription/Routing/Dns/Settings/
-      Log/Stats/Connection/Diagnostics/Backup/Gateway/WebSession/Agent).
-- [ ] Интеграционные тесты API.
+- [x] prost/tonic типы из `proto/lavray.proto` (15 сервисов, 97 RPC).
+- [x] SettingsService (каталог, get/set/reset, aggregated-флаги перезапуска).
+- [x] ProfileService (CRUD/Import/Export/groups, конверсии model↔proto).
+- [x] RoutingService (18.11): List/Get/Create/Update/Delete/Reset/Activate/
+      GetActive/Export/Import; repo на meta `routing.custom_presets`
+      (DATA_LOSS на повреждение), plan_insert (mint custom:<slug>),
+      активный в settings `routing.active_preset` (F2 аудита №7), удаление
+      активного → «global» + снятие DNS-карточки, конфликт ревизий ABORTED.
+- [ ] Волна 6.5: конвертер маршрутов NekoRay 4.x (DetectAndParse-NekoRay +
+      ImportNekoRayRoute; сейчас честный UNIMPLEMENTED), DnsService,
+      переопределения builtin (<данные>/presets/override, T-75/7.5).
+- [ ] Остальные сервисы (Core/Subscription/Log/Stats/Connection/
+      Diagnostics/Backup/Gateway/WebSession/Agent) — по мере движка (волна 7).
+- [x] Интеграционные тесты API (347 всего; RoutingService — 15).
 
 ## Волна 7 — lavray-engine + lavray-core
 
