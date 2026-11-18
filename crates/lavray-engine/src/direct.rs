@@ -10,6 +10,7 @@ use tokio::net::TcpStream;
 use crate::addr::TargetAddr;
 use crate::relay::{UpRead, UpWrite};
 use crate::ss::client::{self, SsOutbound};
+use crate::trojan::{self, TrojanOutbound};
 
 /// Таймаут установки исходящего соединения (паритет sing-box 5 c).
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
@@ -22,6 +23,8 @@ pub enum Outbound {
     Direct,
     /// Shadowsocks AEAD/2022 (волна 7b).
     Shadowsocks(Box<SsOutbound>),
+    /// Trojan поверх TLS (волна 7c).
+    Trojan(Box<TrojanOutbound>),
 }
 
 impl Outbound {
@@ -37,6 +40,7 @@ impl Outbound {
                 let (r, w) = client::connect(o, target).await?;
                 Ok((Box::pin(r), Box::pin(w)))
             }
+            Self::Trojan(o) => trojan::client::connect(o, target).await,
         }
     }
 }
