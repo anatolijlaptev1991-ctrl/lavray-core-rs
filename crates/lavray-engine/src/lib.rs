@@ -15,6 +15,7 @@ pub mod relay;
 pub mod server;
 pub mod sniff;
 pub mod socks5;
+pub mod ss;
 
 pub use addr::TargetAddr;
 pub use direct::Outbound;

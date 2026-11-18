@@ -4,10 +4,16 @@
 //! «предзачитанного» хвоста (HTTP CONNECT читает голову чанками и может
 //! захватить первые байты данных). Буферы — фиксированные на стеке задачи.
 
+use std::pin::Pin;
 use std::time::Duration;
 
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
+
+/// Половины исходящего туннеля (Direct — TcpStream, протоколы — свои
+/// потоки; dyn-диспатч один раз на чанк, не на пакет).
+pub type UpRead = Pin<Box<dyn AsyncRead + Send + Unpin>>;
+pub type UpWrite = Pin<Box<dyn AsyncWrite + Send + Unpin>>;
 
 /// Размер буфера направления (паритет sing-box 16 КиБ).
 const BUF: usize = 16 * 1024;
@@ -16,13 +22,17 @@ const IDLE: Duration = Duration::from_secs(300);
 
 /// Копирует в обе стороны до EOF/ошибки; сперва пишет `prefix` в `up_w`.
 /// Возвращает суммарное число байт (для статистики соединения).
-pub async fn pump(
+pub async fn pump<R, W>(
     mut down_r: OwnedReadHalf,
     mut down_w: OwnedWriteHalf,
-    mut up_r: OwnedReadHalf,
-    mut up_w: OwnedWriteHalf,
+    mut up_r: R,
+    mut up_w: W,
     prefix: Vec<u8>,
-) -> std::io::Result<u64> {
+) -> std::io::Result<u64>
+where
+    R: AsyncRead + Unpin,
+    W: AsyncWrite + Unpin,
+{
     if !prefix.is_empty() {
         up_w.write_all(&prefix).await?;
     }

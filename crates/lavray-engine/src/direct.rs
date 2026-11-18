@@ -8,6 +8,8 @@ use std::time::Duration;
 use tokio::net::TcpStream;
 
 use crate::addr::TargetAddr;
+use crate::relay::{UpRead, UpWrite};
+use crate::ss::client::{self, SsOutbound};
 
 /// Таймаут установки исходящего соединения (паритет sing-box 5 c).
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
@@ -15,16 +17,26 @@ const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 /// Исходящий канал.
 #[derive(Debug, Clone, Default)]
 pub enum Outbound {
-    /// Напрямую (волна 7a; «proxy»-протоколы — 7b+).
+    /// Напрямую (волна 7a).
     #[default]
     Direct,
+    /// Shadowsocks AEAD/2022 (волна 7b).
+    Shadowsocks(Box<SsOutbound>),
 }
 
 impl Outbound {
-    /// Установить соединение к цели.
-    pub async fn connect(&self, target: &TargetAddr) -> std::io::Result<TcpStream> {
+    /// Установить туннель к цели: половины (read, write).
+    pub async fn connect(&self, target: &TargetAddr) -> std::io::Result<(UpRead, UpWrite)> {
         match self {
-            Self::Direct => connect_direct(target).await,
+            Self::Direct => {
+                let s = connect_direct(target).await?;
+                let (r, w) = s.into_split();
+                Ok((Box::pin(r), Box::pin(w)))
+            }
+            Self::Shadowsocks(o) => {
+                let (r, w) = client::connect(o, target).await?;
+                Ok((Box::pin(r), Box::pin(w)))
+            }
         }
     }
 }

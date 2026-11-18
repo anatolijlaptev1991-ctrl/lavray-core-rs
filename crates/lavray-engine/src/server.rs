@@ -142,9 +142,8 @@ async fn socks_serve(
     let stream = s.into_inner();
     let (cr, mut cw) = stream.into_split();
     match upstream {
-        Ok(up) => {
+        Ok((ur, uw)) => {
             socks5::reply_ok(&mut cw).await?;
-            let (ur, uw) = up.into_split();
             relay::pump(cr, cw, ur, uw, Vec::new()).await?;
             Ok(())
         }
@@ -165,9 +164,8 @@ async fn http_serve(stream: TcpStream, first: u8, outbound: Outbound) -> std::io
     let stream = s.into_inner();
     let (cr, mut cw) = stream.into_split();
     match upstream {
-        Ok(up) => {
+        Ok((ur, uw)) => {
             http_connect::reply_ok(&mut cw).await?;
-            let (ur, uw) = up.into_split();
             relay::pump(cr, cw, ur, uw, tail).await?;
             Ok(())
         }

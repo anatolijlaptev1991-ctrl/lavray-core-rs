@@ -41,6 +41,12 @@ tonic = "0.12"
 tonic-build = "0.12"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "net", "io-util", "time"] }
 tokio-stream = "0.1"
+blake3 = "1"
+aes-gcm = "0.10"
+chacha20poly1305 = { version = "0.10", features = ["std"] }
+hkdf = "0.12"
+md-5 = "0.10"
+getrandom = "0.3"
 async-trait = "0.1"
 
 # Единые линты для всех крейтов: pedantic + perf, ноль предупреждений.
