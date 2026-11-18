@@ -80,12 +80,21 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
       Diagnostics/Backup/Gateway/WebSession/Agent) — по мере движка (волна 7).
 - [x] Интеграционные тесты API (347 всего; RoutingService — 15).
 
-## Волна 7 — lavray-engine + lavray-core
+## Волна 7 — lavray-engine + lavray-core (РЕШЕНО 18.11: полный Rust-движок)
 
-- [ ] Решение по движку (Rust-крейты vs FFI sing-box) — фиксируется до реализации.
-- [ ] Граница `Engine`, lifecycle, stdin-протокол, сервер.
+Владелец выбрал полный перепись движка на Rust — без Go sing-box (ни child,
+ни FFI). Порядок волн (каждая = работающий инкремент со сквозными тестами):
+
+- [ ] 7a: Engine-каркас + mixed-инбаунд (SOCKS5/HTTP CONNECT) + outbound
+      direct + прокси-цикл — первый сквозной трафик через Rust.
+- [ ] 7b: shadowsocks AEAD-2022 (клиент + тестовый сервер, e2e loopback).
+- [ ] 7c: trojan (rustls) + vmess.
+- [ ] 7d: vless + REALITY (свой TLS1.3 ClientHello-мимикрия).
+- [ ] 7e: ws/httpupgrade транспорты; QUIC: hysteria2, tuic (quinn).
+- [ ] 7f: TUN (порт netstack), rule engine, .srs, DNS-модуль (DoH/DoT/FakeIP).
+- [ ] 7g: бинарь `lavray-core serve` (паритет запуска Go) + API-интеграция.
 - [ ] gateway (OpenWrt tproxy/nftables), updates, MCP.
-- [ ] Сквозные тесты с реальным движком.
+- [ ] Сквозные тесты с реальным движком (в т.ч. против эталонных серверов).
 
 ## Критерии готовности ядра
 
