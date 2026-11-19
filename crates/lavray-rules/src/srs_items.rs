@@ -24,7 +24,12 @@ pub(crate) const ITEM_WIFI_BSSID: u8 = 15;
 pub(crate) const ITEM_ADGUARD_DOMAIN: u8 = 16;
 pub(crate) const ITEM_PROCESS_PATH_REGEX: u8 = 17;
 pub(crate) const ITEM_NETWORK_TYPE: u8 = 18;
+// ITEM_NETWORK_IS_EXPENSIVE=19 / ITEM_NETWORK_IS_CONSTRAINED=20: с nil
+// NetworkManager (CLI) item'ы опускаются — в reader не встречаются в
+// матче, но коды резервируются для skip-совместимости.
+#[allow(dead_code)]
 pub(crate) const ITEM_NETWORK_IS_EXPENSIVE: u8 = 19;
+#[allow(dead_code)]
 pub(crate) const ITEM_NETWORK_IS_CONSTRAINED: u8 = 20;
 pub(crate) const ITEM_NETWORK_IFACE_ADDR: u8 = 21;
 pub(crate) const ITEM_DEFAULT_IFACE_ADDR: u8 = 22;

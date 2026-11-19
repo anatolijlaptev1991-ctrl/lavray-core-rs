@@ -113,10 +113,14 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
       logical binary-правила (and/or/invert, подправила с полными
       item'ами) — живое сравнение с эталоном 32/32 IDENTICAL
       (большой+adguard+logical+golden наборы).
-- [ ] 7f-3b: v1/v2/v4/v5 Upgrade-семантика, TUN (порт netstack),
-      DNS-модуль (DoH/DoT/FakeIP); REALITY (TLS1.3 ClientHello-мимикрия);
-      QUIC: hysteria2, tuic (quinn); CLI-кейсы cobra
-      (version/help/unknown) — байт-паритет.
+- [x] 7f-3b: downgrade-семантика compile (v5→4→3→2 по наличию v3-полей,
+      паритет версий байта проверен живьём: v3nt=3, v3d=2, big=2);
+      network_type/u8-InterfaceType + nil-NetworkManager семантика
+      (пустое правило матчит ВСЁ, rule_abstract len==0 → true) —
+      ПОЛНЫЙ live-паритет 114/114 по всем наборам.
+- [ ] 7f-3c: TUN (порт netstack), DNS-модуль (DoH/DoT/FakeIP);
+      REALITY (TLS1.3 ClientHello-мимикрия); QUIC: hysteria2, tuic
+      (quinn); CLI-кейсы cobra (version/help/unknown) — байт-паритет.
 - [x] 7g (MVP): бинарь `lavray-core serve` (паритет запуска Go) + API-интеграция.
 - [ ] gateway (OpenWrt tproxy/nftables), updates, MCP.
 - [ ] Сквозные тесты с реальным движком (в т.ч. против эталонных серверов).

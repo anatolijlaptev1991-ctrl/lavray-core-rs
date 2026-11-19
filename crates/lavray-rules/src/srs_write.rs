@@ -6,6 +6,7 @@
 
 use crate::source::{DefaultRule, HeadlessRule, PlainRuleSet};
 use crate::srs_build::build_succinct;
+use crate::srs_downgrade::downgrade_version;
 use crate::srs_enc::{
     write_ipset, write_string_slice, write_u16_slice, write_u64_slice, write_uvarint,
 };
@@ -13,15 +14,15 @@ use crate::srs_enc::{
 const PREFIX_LABEL: u8 = b'\r';
 const ROOT_LABEL: u8 = b'\n';
 
-/// Скомпилировать rule-set (source v3) в бинарный .srs версии 2
-/// (downgrade как Go compile при отсутствии v3-полей).
+/// Скомпилировать rule-set в бинарный .srs с downgrade-семантикой
+/// Go compile (3 → 2 при отсутствии v3-полей во всех правилах).
 ///
 /// # Errors
 /// Ошибки сериализации (I/O).
 pub fn write_ruleset(set: &PlainRuleSet) -> Result<Vec<u8>, std::io::Error> {
     let mut out = Vec::new();
     out.extend_from_slice(b"SRS");
-    out.push(2);
+    out.push(downgrade_version(set));
     {
         let mut z = flate2::write::ZlibEncoder::new(&mut out, flate2::Compression::best());
         write_uvarint(&mut z, set.rules.len() as u64)?;
@@ -125,11 +126,25 @@ fn write_default<W: std::io::Write>(w: &mut W, d: &DefaultRule) -> std::io::Resu
         write_string_slice(w, &d.wifi_bssid)?;
     }
     if !d.network_type.is_empty() {
-        // v3-only; пишем как u8-слайс
+        // v3-only; u8-слайс InterfaceType (wifi=0, cellular=1, ethernet=2, other=3)
         w.write_all(&[18])?;
         write_uvarint(w, d.network_type.len() as u64)?;
-        let bytes: Vec<u8> = d.network_type.iter().map(|_| 0u8).collect();
-        w.write_all(&bytes)?;
+        for name in &d.network_type {
+            let code = match name.as_str() {
+                "wifi" => 0u8,
+                "cellular" => 1,
+                "ethernet" => 2,
+                "other" => 3,
+                other => other.parse().map_err(std::io::Error::other)?,
+            };
+            w.write_all(&[code])?;
+        }
+    }
+    if d.network_is_expensive {
+        w.write_all(&[19])?;
+    }
+    if d.network_is_constrained {
+        w.write_all(&[20])?;
     }
     w.write_all(&[0xFF])?;
     w.write_all(&[u8::from(d.invert)])?;

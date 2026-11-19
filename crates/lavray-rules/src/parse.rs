@@ -64,6 +64,8 @@ fn convert(raw: &RawHeadlessRule) -> Result<HeadlessRule, RuleSetParseError> {
                 package_name: raw.package_name.clone(),
                 package_name_regex: raw.package_name_regex.clone(),
                 network_type: raw.network_type.clone(),
+                network_is_expensive: raw.network_is_expensive,
+                network_is_constrained: raw.network_is_constrained,
                 wifi_ssid: raw.wifi_ssid.clone(),
                 wifi_bssid: raw.wifi_bssid.clone(),
                 invert: raw.invert,

@@ -61,6 +61,8 @@ pub struct DefaultRule {
     pub package_name: Vec<String>,
     pub package_name_regex: Vec<String>,
     pub network_type: Vec<String>,
+    pub network_is_expensive: bool,
+    pub network_is_constrained: bool,
     pub wifi_ssid: Vec<String>,
     pub wifi_bssid: Vec<String>,
     pub invert: bool,
@@ -89,6 +91,9 @@ pub struct PlainRuleSet {
 impl DefaultRule {
     /// Есть ли хоть одно условие (Go `IsValid` — не дефолт кроме invert).
     pub fn has_conditions(&self) -> bool {
+        if self.network_is_expensive || self.network_is_constrained {
+            return true;
+        }
         let DefaultRule {
             query_type,
             network,
@@ -108,6 +113,8 @@ impl DefaultRule {
             package_name,
             package_name_regex,
             network_type,
+            network_is_expensive: _,
+            network_is_constrained: _,
             wifi_ssid,
             wifi_bssid,
             invert: _,
