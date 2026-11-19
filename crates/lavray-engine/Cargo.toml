@@ -26,6 +26,10 @@ rustls = { workspace = true }
 tokio-rustls = { workspace = true }
 rcgen = { workspace = true }
 webpki-roots = { workspace = true }
+aes = { workspace = true }
+hmac = { workspace = true }
+crc32fast = { workspace = true }
+uuid = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }

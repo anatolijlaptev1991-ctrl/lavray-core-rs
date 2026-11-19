@@ -17,6 +17,7 @@ pub mod sniff;
 pub mod socks5;
 pub mod ss;
 pub mod trojan;
+pub mod vmess;
 
 pub use addr::TargetAddr;
 pub use direct::Outbound;

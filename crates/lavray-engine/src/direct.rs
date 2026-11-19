@@ -11,6 +11,7 @@ use crate::addr::TargetAddr;
 use crate::relay::{UpRead, UpWrite};
 use crate::ss::client::{self, SsOutbound};
 use crate::trojan::{self, TrojanOutbound};
+use crate::vmess::{self, VmessOutbound};
 
 /// Таймаут установки исходящего соединения (паритет sing-box 5 c).
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
@@ -25,6 +26,8 @@ pub enum Outbound {
     Shadowsocks(Box<SsOutbound>),
     /// Trojan поверх TLS (волна 7c).
     Trojan(Box<TrojanOutbound>),
+    /// VMess AEAD (волна 7c).
+    Vmess(Box<VmessOutbound>),
 }
 
 impl Outbound {
@@ -41,6 +44,7 @@ impl Outbound {
                 Ok((Box::pin(r), Box::pin(w)))
             }
             Self::Trojan(o) => trojan::client::connect(o, target).await,
+            Self::Vmess(o) => vmess::client::connect(o, target).await,
         }
     }
 }

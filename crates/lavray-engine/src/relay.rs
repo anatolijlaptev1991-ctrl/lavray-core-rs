@@ -41,11 +41,13 @@ where
     let mut a2b = Box::new([0u8; BUF]);
     let mut b2a = Box::new([0u8; BUF]);
     let mut total = prefix.len() as u64;
+    let dbg = std::env::var("LAVRAY_DEBUG_RELAY").is_ok();
     loop {
         tokio::select! {
             r = down_r.read(a2b.as_mut_slice()) => match r {
                 Ok(0) | Err(_) => break, // клиент закрыл/ошибка — конец обоих
                 Ok(n) => {
+                    if dbg { eprintln!("RELAY {:p}: down→up {n} байт", std::ptr::from_ref(&up_w)); }
                     up_w.write_all(&a2b[..n]).await?;
                     total += n as u64;
                 }
@@ -53,6 +55,7 @@ where
             r = up_r.read(b2a.as_mut_slice()) => match r {
                 Ok(0) | Err(_) => break,
                 Ok(n) => {
+                    if dbg { eprintln!("RELAY {:p}: up→down {n} байт", std::ptr::from_ref(&down_w)); }
                     down_w.write_all(&b2a[..n]).await?;
                     total += n as u64;
                 }
