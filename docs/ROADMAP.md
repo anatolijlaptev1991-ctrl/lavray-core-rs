@@ -118,9 +118,13 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
       network_type/u8-InterfaceType + nil-NetworkManager семантика
       (пустое правило матчит ВСЁ, rule_abstract len==0 → true) —
       ПОЛНЫЙ live-паритет 114/114 по всем наборам.
-- [ ] 7f-3c: TUN (порт netstack), DNS-модуль (DoH/DoT/FakeIP);
-      REALITY (TLS1.3 ClientHello-мимикрия); QUIC: hysteria2, tuic
-      (quinn); CLI-кейсы cobra (version/help/unknown) — байт-паритет.
+- [x] 7f-3c-1: крейт lavray-dns — wire-format RFC 1035 (parse/build,
+      сжатие-указатели), UDP-транспорт, DoH (rustls + HTTP/1.1, chunked),
+      FakeIP-пул (детерминированный, wrap-on-exhaust); живые e2e
+      (Cloudflare UDP + Google DoH — 2/2, #[ignore] в CI); 13 тестов.
+- [ ] 7f-3c-2: TUN (порт netstack); REALITY (TLS1.3 ClientHello-
+      мимикрия); QUIC: hysteria2, tuic (quinn); DoT; CLI-кейсы cobra
+      (version/help/unknown) — байт-паритет.
 - [x] 7g (MVP): бинарь `lavray-core serve` (паритет запуска Go) + API-интеграция.
 - [ ] gateway (OpenWrt tproxy/nftables), updates, MCP.
 - [ ] Сквозные тесты с реальным движком (в т.ч. против эталонных серверов).

@@ -1084,6 +1084,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "lavray-dns"
+version = "0.9.3"
+dependencies = [
+ "tokio",
+ "tokio-rustls",
+ "webpki-roots 0.26.11",
+]
+
+[[package]]
 name = "lavray-engine"
 version = "0.9.3"
 dependencies = [

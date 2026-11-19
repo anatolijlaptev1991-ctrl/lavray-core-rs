@@ -1,0 +1,22 @@
+# lavray-dns — DNS-модуль движка: wire-format RFC 1035, UDP/DoH-транспорты,
+# FakeIP (волна 7f-3c). Zero-dependency разбор/сборка сообщений.
+
+[package]
+name = "lavray-dns"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+tokio = { workspace = true }
+tokio-rustls = { workspace = true }
+webpki-roots = { workspace = true }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "net", "io-util", "time"] }
