@@ -5,6 +5,9 @@
 
 pub mod frame;
 pub mod handshake;
+mod server_read;
+pub mod server_stream;
+mod server_write;
 pub mod write;
 
 pub use handshake::{WsDial, handshake};

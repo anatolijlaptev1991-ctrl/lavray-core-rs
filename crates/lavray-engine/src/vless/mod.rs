@@ -5,6 +5,7 @@
 //! подволна (мимикрия ClientHello), статус в ROADMAP.
 
 pub mod client;
+pub mod relay_target;
 pub mod server;
 
 pub use client::VlessOutbound;

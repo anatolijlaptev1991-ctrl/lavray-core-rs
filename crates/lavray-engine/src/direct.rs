@@ -13,9 +13,20 @@ use crate::ss::client::{self, SsOutbound};
 use crate::trojan::{self, TrojanOutbound};
 use crate::vless::{self, VlessOutbound};
 use crate::vmess::{self, VmessOutbound};
+use crate::ws::WsDial;
 
 /// Таймаут установки исходящего соединения (паритет sing-box 5 c).
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// Транспорт исходящего туннеля (волна 7e: ws; grpc/h2 — далее).
+#[derive(Debug, Clone, Default)]
+pub enum Transport {
+    /// Прямой TCP (+TLS по флагам протокола).
+    #[default]
+    Tcp,
+    /// WebSocket (Upgrade поверх TCP/TLS).
+    Ws(WsDial),
+}
 
 /// Исходящий канал.
 #[derive(Debug, Clone, Default)]

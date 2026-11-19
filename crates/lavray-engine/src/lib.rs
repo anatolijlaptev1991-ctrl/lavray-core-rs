@@ -23,5 +23,5 @@ pub mod vmess;
 pub mod ws;
 
 pub use addr::TargetAddr;
-pub use direct::Outbound;
+pub use direct::{Outbound, Transport};
 pub use server::{MixedConfig, MixedServer, start};

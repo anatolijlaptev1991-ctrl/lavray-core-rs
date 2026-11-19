@@ -9,6 +9,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 
 use crate::addr::TargetAddr;
+use crate::direct::Transport;
 use crate::relay::{UpRead, UpWrite};
 use crate::tls::{TlsDial, connect as tls_connect};
 use crate::vmess::client::uuid_bytes;
@@ -22,6 +23,8 @@ pub struct VlessOutbound {
     pub uuid: String,
     /// TLS (None — плоский TCP, только для тестов/локальных туннелей).
     pub tls: Option<TlsDial>,
+    /// Транспорт (TCP по умолчанию; ws — волна 7e).
+    pub transport: Transport,
 }
 
 /// Запрос VLESS: [0][uuid16][0][1][port BE][ATYP+addr] (+ payload следом).
@@ -61,19 +64,33 @@ pub async fn connect(o: &VlessOutbound, target: &TargetAddr) -> std::io::Result<
     let _ = tcp.set_nodelay(true);
 
     let request = request_bytes(&uid, target);
-    match &o.tls {
-        None => {
-            let mut stream = tcp;
-            stream.write_all(&request).await?;
-            read_response(&mut stream).await?;
-            let (r, w) = stream.into_split();
-            Ok((Box::pin(r), Box::pin(w)))
-        }
-        Some(dial) => {
-            let mut tls = tls_connect(tcp, dial, &o.server.host_string()).await?;
-            tls.write_all(&request).await?;
-            read_response(&mut tls).await?;
-            let (r, w) = tokio::io::split(tls);
+    match &o.transport {
+        Transport::Tcp => match o.tls.as_ref() {
+            None => {
+                let mut stream = tcp;
+                stream.write_all(&request).await?;
+                read_response(&mut stream).await?;
+                let (r, w) = stream.into_split();
+                Ok((Box::pin(r), Box::pin(w)))
+            }
+            Some(dial) => {
+                let mut tls = tls_connect(tcp, dial, &o.server.host_string()).await?;
+                tls.write_all(&request).await?;
+                read_response(&mut tls).await?;
+                let (r, w) = tokio::io::split(tls);
+                Ok((Box::pin(r), Box::pin(w)))
+            }
+        },
+        Transport::Ws(dial_ws) => {
+            // Upgrade поверх plain TCP → фреймы. ws+TLS — подволна 7e-2
+            // (handshake над TlsStream требует generic-половин).
+            if o.tls.is_some() {
+                return Err(std::io::Error::other("vless: ws+TLS — волна 7e-2"));
+            }
+            let (mut r, mut w) =
+                crate::ws::handshake(tcp, dial_ws, &o.server.host_string()).await?;
+            w.write_all(&request).await?;
+            read_response(&mut r).await?;
             Ok((Box::pin(r), Box::pin(w)))
         }
     }
