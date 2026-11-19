@@ -1,1 +1,8 @@
 /target
+*.log
+keylog*.txt
+s_server*.log
+srv_copy.log
+dbg_*.txt
+hello_dump.txt
+hello_real.txt

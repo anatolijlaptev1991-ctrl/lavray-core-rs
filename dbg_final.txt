@@ -1,3 +1,0 @@
-handshake OK, verified=false
-dbg read err: read header: early eof
-response: 2 bytes, head: "\u{1}\0"

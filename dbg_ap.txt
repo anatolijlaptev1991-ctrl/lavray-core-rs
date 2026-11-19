@@ -1,5 +1,0 @@
-dbg: ecdhe=fe36eb7bf64512a9d3d1e072e50f2e3b8154a0dc6a3f619d6d534d0e8631281a
-dbg: c_ap_secret=4459df0f2aa41495c346bbb225afb752e2f01233d945c0556bf83f593be62bfb
-dbg: s_ap_secret=5ce126fb63ca8062434bb43bb62f354f2fa5a495b3e244f9b82a49a7a72399bd
-handshake OK, verified=false
-response: 0 bytes, head: ""
