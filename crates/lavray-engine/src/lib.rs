@@ -20,6 +20,7 @@ pub mod tls;
 pub mod trojan;
 pub mod vless;
 pub mod vmess;
+pub mod ws;
 
 pub use addr::TargetAddr;
 pub use direct::Outbound;
