@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-//! # lavray-api
-//!
-//! API LAVRay (tonic) поверх store/cfgbuild/model; контракт lavray.v1;
-//! общее хранилище Arc<Mutex<Store>>.
+//! API LAVRay (tonic); контракт lavray.v1; хранилище Arc<Mutex<Store>>.
 pub mod convert;
+mod dns;
+mod dns_choice;
+mod dns_validate;
 pub mod group_convert;
 mod groups_rpc;
 mod preset_active;
@@ -28,6 +28,7 @@ mod routing_neko;
 mod routing_read;
 pub mod settings;
 
-pub use profiles::ProfileServiceImpl;
-pub use routing::RoutingServiceImpl;
-pub use settings::SettingsServiceImpl;
+pub use {
+    dns::DnsServiceImpl, profiles::ProfileServiceImpl, routing::RoutingServiceImpl,
+    settings::SettingsServiceImpl,
+};

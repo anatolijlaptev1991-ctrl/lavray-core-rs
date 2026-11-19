@@ -16,7 +16,7 @@ mod code {
     pub const DNS_MODE_ADVANCED: i32 = 2;
 }
 
-pub(crate) fn strategy_to_proto(s: &str) -> i32 {
+pub fn strategy_to_proto(s: &str) -> i32 {
     match s {
         "prefer_ipv4" => pb::DomainStrategy::PreferIpv4 as i32,
         "prefer_ipv6" => pb::DomainStrategy::PreferIpv6 as i32,
@@ -26,7 +26,7 @@ pub(crate) fn strategy_to_proto(s: &str) -> i32 {
     }
 }
 
-pub(crate) fn strategy_from_proto(v: i32) -> String {
+pub fn strategy_from_proto(v: i32) -> String {
     match pb::DomainStrategy::try_from(v) {
         Ok(pb::DomainStrategy::PreferIpv4) => "prefer_ipv4".into(),
         Ok(pb::DomainStrategy::PreferIpv6) => "prefer_ipv6".into(),
@@ -48,7 +48,7 @@ pub(crate) fn default_dns() -> DnsBlock {
     }
 }
 
-pub(crate) fn dns_block_to_proto(d: &DnsBlock) -> pb::DnsSettings {
+pub fn dns_block_to_proto(d: &DnsBlock) -> pb::DnsSettings {
     pb::DnsSettings {
         mode: if d.mode == "advanced" {
             code::DNS_MODE_ADVANCED
@@ -69,7 +69,7 @@ pub(crate) fn dns_block_to_proto(d: &DnsBlock) -> pb::DnsSettings {
     }
 }
 
-pub(crate) fn dns_block_from_proto(d: &pb::DnsSettings) -> DnsBlock {
+pub fn dns_block_from_proto(d: &pb::DnsSettings) -> DnsBlock {
     DnsBlock {
         mode: if d.mode == code::DNS_MODE_ADVANCED {
             "advanced".into()
