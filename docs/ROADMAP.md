@@ -91,10 +91,19 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
 - [x] 7c: trojan (rustls) + vmess (AEAD, alterId=0, паритет sing-vmess v0.2.8).
 - [x] 7d: vless v0 (REALITY — в 7f-цикле).
 - [x] 7e: WebSocket-транспорт RFC 6455 (клиент + сервер).
-- [ ] 7f: TUN (порт netstack), rule engine, .srs, DNS-модуль (DoH/DoT/FakeIP);
-      REALITY (TLS1.3 ClientHello-мимикрия); QUIC: hysteria2, tuic (quinn);
-      субкоманды `check`/`format`/`rule-set` в бинаре — приёмка по эталонным
-      app-cases (см. `etalon/README.md`, 230 кейсов recorded behavior Go).
+- [x] 7f-1: крейт lavray-rules — headless rule-set source v3: строгий парсер
+      (unknown-field в Go-формате), item'ы в порядке Go, Go-описания
+      (`domain=[a b c...]`), матчер (bare/dotted suffix, lowercase, regex,
+      ip_cidr; logical and/or + invert). Субкоманда `lavray-core rule-set
+      match` — replay 9/9 rs-match кейсов БАЙТ-В-БАЙТ с записью эталона.
+      17 тестов (recorded-семантика: bare-суффикс = exact|dot-suffix,
+      dotted = только dot-suffix, process/port в CLI не матчатся, exit=0
+      при промахе, вывод в stderr).
+- [ ] 7f-2: .srs binary (compile/decompile — байт-паритет), v1/v2/v4/v5
+      Upgrade, субкоманды `check`/`format` (Go-тексты ошибок JSON), TUN
+      (порт netstack), DNS-модуль (DoH/DoT/FakeIP); REALITY (TLS1.3
+      ClientHello-мимикрия); QUIC: hysteria2, tuic (quinn);
+      полный `app replay` порта по 230 кейсам.
 - [x] 7g (MVP): бинарь `lavray-core serve` (паритет запуска Go) + API-интеграция.
 - [ ] gateway (OpenWrt tproxy/nftables), updates, MCP.
 - [ ] Сквозные тесты с реальным движком (в т.ч. против эталонных серверов).

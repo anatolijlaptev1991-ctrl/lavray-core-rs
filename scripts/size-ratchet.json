@@ -2,7 +2,7 @@
   "crates/lavray-api/src/convert.rs": 91,
   "crates/lavray-api/src/group_convert.rs": 83,
   "crates/lavray-api/src/groups_rpc.rs": 58,
-  "crates/lavray-api/src/lib.rs": 33,
+  "crates/lavray-api/src/lib.rs": 34,
   "crates/lavray-api/src/preset_active.rs": 64,
   "crates/lavray-api/src/preset_convert.rs": 137,
   "crates/lavray-api/src/preset_convert_dns.rs": 92,

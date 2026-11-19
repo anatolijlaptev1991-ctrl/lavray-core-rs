@@ -1,0 +1,22 @@
+# lavray-rules — rule engine: headless rule-set (source JSON v3) парсинг,
+# матчинг и описания в паритете с Go sing-box route/rule (волна 7f-1).
+
+[package]
+name = "lavray-rules"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+regex = "1"
+ipnet = "2"
+
+[dev-dependencies]
+
+[lints]
+workspace = true
