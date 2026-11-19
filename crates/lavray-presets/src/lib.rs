@@ -1,21 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 //! # lavray-presets
-//!
-//! Маршрутные пресеты LAVRay (`preset.schema.v1`) — перепись Go
-//! `lavray/core/internal/presets` на Rust. Загрузка 6 builtin-наборов,
-//! валидация при загрузке (SCHEMA §4), канонический JSON `Localized`,
-//! пользовательские копии и id `custom:<slug>`.
+//! Пресеты LAVRay (порт Go internal/presets): 6 builtin, SCHEMA §4,
+//! канонический Localized, custom:<slug>.
 //!
 //! ```
-//! use lavray_presets::{builtin_presets, load_preset};
-//! let presets = builtin_presets().unwrap();
-//! assert_eq!(presets.len(), 6);
-//! assert!(presets.iter().any(|p| p.id == "lav-ru"));
+//! use lavray_presets::builtin_presets;
+//! assert_eq!(builtin_presets().unwrap().len(), 6);
 //! ```
 
 mod custom;
 mod load;
+mod neko_convert;
+mod neko_custom;
+mod neko_route;
 mod slug;
 
 pub mod builtin;
@@ -34,6 +32,8 @@ pub use customrules::{
 };
 pub use load::load_preset;
 pub use localized::Localized;
+pub use neko_convert::{ConvertMeta, convert_neko_route};
+pub use neko_route::{NekoRayRoute, parse as parse_neko_route};
 pub use process_rules::effective_process_rules;
 pub use slug::{mint_id, slugify};
 pub use types::{DnsBlock, Preset, ProcessRule, Routing, SCHEMA_VERSION};

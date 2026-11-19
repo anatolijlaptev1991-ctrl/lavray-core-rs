@@ -6,7 +6,7 @@
 //! берёт (файл не может занять id встроенного набора).
 
 #![allow(clippy::result_large_err)] // tonic::Status велик по природе контракта
-use lavray_presets::{Preset, SCHEMA_VERSION, load_preset, slugify};
+use lavray_presets::{Preset, slugify};
 use lavray_store::Store;
 use std::sync::MutexGuard;
 use tonic::Status;
@@ -53,53 +53,13 @@ pub fn export_json(p: &Preset) -> Result<String, Status> {
         .map_err(|e| Status::internal(format!("экспорт набора {:?}: {e}", p.id)))
 }
 
-/// Импорт: файл LAVRay (детект по ключу `routing`; маршрут NekoRay — отдельная
-/// работа волны 6.5, пока UNIMPLEMENTED) → новый пользовательский набор.
+/// Импорт (делегат): логика детекта формата — preset_detect.rs
+/// (трещотка размеров; волна 6.5 — обе ветки: LAVRay и NekoRay).
 pub fn import_preset(
     st: &MutexGuard<'_, Store>,
     json: &str,
 ) -> Result<(pb::RoutingPreset, Vec<String>), Status> {
-    if json.len() > MAX_IMPORT_BYTES {
-        return Err(Status::resource_exhausted(format!(
-            "файл больше {MAX_IMPORT_BYTES} байт"
-        )));
-    }
-    let top: serde_json::Map<String, serde_json::Value> =
-        serde_json::from_str(json).map_err(|e| {
-            Status::invalid_argument(format!("формат файла: ожидался JSON-объект: {e}"))
-        })?;
-    if top.get("routing").is_none() {
-        // Ключи маршрута NekoRay (Go nekoKeys).
-        const NEKO_KEYS: [&str; 6] = [
-            "domainStrategy",
-            "rules",
-            "conn",
-            "bypass_lan",
-            "bypass_chn",
-            "bypass_gfw",
-        ];
-        if NEKO_KEYS.iter().any(|k| top.contains_key(*k)) {
-            return Err(Status::unimplemented(
-                "конвертер маршрутов NekoRay — волна 6.5; файл LAVRay содержит ключ routing",
-            ));
-        }
-        return Err(Status::invalid_argument(
-            "формат файла: нет ни routing, ни полей маршрута NekoRay",
-        ));
-    }
-    // Вставка выставит свою версию схемы — версию файла проверяем здесь.
-    let version = top
-        .get("version")
-        .and_then(serde_json::Value::as_u64)
-        .unwrap_or(0);
-    if version == 0 || version > u64::from(SCHEMA_VERSION) {
-        return Err(Status::invalid_argument(format!(
-            "версия схемы {version} не поддерживается (поддерживается ≤ {SCHEMA_VERSION})"
-        )));
-    }
-    let p = load_preset(json).map_err(|e| Status::invalid_argument(e.0))?;
-    let out = insert_imported(st, p)?;
-    Ok((out, Vec::new()))
+    super::preset_detect::import_preset(st, json)
 }
 
 /// Очистить всё, что файл не вправе задавать, и вставить (PlanInsert выдаёт

@@ -124,14 +124,6 @@ async fn import_rejects_garbage_and_oversize() {
         .await
         .unwrap_err();
     assert_eq!(code_of(&err), Code::InvalidArgument);
-    // Маршрут NekoRay — волна 6.5.
-    let err = s
-        .import_preset(Request::new(pb::ImportPresetRequest {
-            json: "{\"rules\":[]}".into(),
-        }))
-        .await
-        .unwrap_err();
-    assert_eq!(code_of(&err), Code::Unimplemented);
     // Больше 1 МиБ.
     let big = format!("{{\"routing\":{{}},\"pad\":\"{}\"}}", "x".repeat(1 << 21));
     let err = s
@@ -147,19 +139,6 @@ async fn import_rejects_garbage_and_oversize() {
         .await
         .unwrap_err();
     assert_eq!(code_of(&err), Code::InvalidArgument);
-}
-
-#[tokio::test]
-async fn import_neko_route_unimplemented() {
-    let s = service();
-    let err = s
-        .import_neko_ray_route(Request::new(pb::ImportNekoRayRouteRequest {
-            nekobox_json: "{}".into(),
-            name: None,
-        }))
-        .await
-        .unwrap_err();
-    assert_eq!(code_of(&err), Code::Unimplemented);
 }
 
 #[tokio::test]

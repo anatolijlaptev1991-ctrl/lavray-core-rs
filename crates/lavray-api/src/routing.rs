@@ -158,12 +158,10 @@ impl RoutingService for RoutingServiceImpl {
 
     async fn import_neko_ray_route(
         &self,
-        _request: Request<pb::ImportNekoRayRouteRequest>,
+        request: Request<pb::ImportNekoRayRouteRequest>,
     ) -> Result<Response<pb::ImportNekoRayRouteResponse>, Status> {
-        // Волна 6.5: конвертер маршрутов NekoRay 4.x (PRESET-LAV-RU §3).
-        Err(Status::unimplemented(
-            "конвертер маршрутов NekoRay — волна 6.5",
-        ))
+        let st = lock(&self.store)?;
+        crate::routing_neko::import_neko(&st, request.into_inner())
     }
 
     async fn export_preset(

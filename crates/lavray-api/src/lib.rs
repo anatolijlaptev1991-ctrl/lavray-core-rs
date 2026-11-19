@@ -2,16 +2,15 @@
 
 //! # lavray-api
 //!
-//! API-сервисы LAVRay (tonic) поверх store/cfgbuild/model — волна 6. Контракт
-//! `lavray-proto` (lavray.v1). Реализации сервисов принимают общее хранилище
-//! `Arc<Mutex<Store>>`.
-
+//! API LAVRay (tonic) поверх store/cfgbuild/model; контракт lavray.v1;
+//! общее хранилище Arc<Mutex<Store>>.
 pub mod convert;
 pub mod group_convert;
 mod groups_rpc;
 mod preset_active;
 pub mod preset_convert;
 mod preset_convert_dns;
+mod preset_detect;
 mod preset_edit;
 mod preset_io;
 mod preset_plan;
@@ -25,6 +24,7 @@ pub mod profiles;
 mod profiles_core;
 mod profiles_io;
 mod routing;
+mod routing_neko;
 mod routing_read;
 pub mod settings;
 
