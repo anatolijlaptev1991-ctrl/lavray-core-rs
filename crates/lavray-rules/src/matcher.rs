@@ -5,34 +5,18 @@
 //! (`adapter.InboundContext` с единственным заполненным полем).
 
 use crate::compile::compile_items;
+use crate::meta::MatchMeta;
 use crate::source::{HeadlessRule, LogicalMode, LogicalRule, PlainRuleSet, RuleSetParseError};
-use std::net::IpAddr;
-
-/// Контекст матча: домен или IP (как `M.ParseAddr` в cmd_rule_set_match).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MatchMeta {
-    Domain(String),
-    Ip(IpAddr),
-}
-
-impl MatchMeta {
-    /// Контекст-домен.
-    #[must_use]
-    pub fn domain(d: &str) -> Self {
-        Self::Domain(d.to_string())
-    }
-    /// Контекст-IP.
-    #[must_use]
-    pub fn ip(a: IpAddr) -> Self {
-        Self::Ip(a)
-    }
-}
 
 /// Скомпилированный item: описание + предикат.
 #[derive(Debug, Clone)]
 pub(crate) enum Item {
     /// Условие вне CLI-контекста (port/process/network/…): всегда false.
     Never(String),
+    /// Бинарный .srs: домены succinct-set'ом («domain/domain_suffix=<binary>»).
+    DomainSet(crate::succinct::SuccinctSet),
+    /// Бинарный .srs: IP диапазоны («ip_cidr=<binary>»/«source_ip_cidr=…»).
+    IpRanges(Vec<(std::net::IpAddr, std::net::IpAddr)>, String),
     Domain {
         exact: Vec<String>,
         dotted: Vec<String>,
@@ -71,18 +55,27 @@ impl Item {
                 list.iter().any(|re| re.is_match(&host))
             }
             (Self::IpCidr { nets, .. }, MatchMeta::Ip(ip)) => nets.iter().any(|n| n.contains(ip)),
+            (Self::DomainSet(set), MatchMeta::Domain(host_raw)) => {
+                let rev = crate::succinct::reverse_domain(&host_raw.to_lowercase());
+                set.has(rev.as_bytes())
+            }
+            (Self::IpRanges(ranges, _), MatchMeta::Ip(ip)) => ranges
+                .iter()
+                .any(|(from, to)| crate::srs::ip_in_range(*ip, *from, *to)),
             // доменные item'ы не матчат IP-контекст и наоборот (recorded:
             // «8.8.8.8» против доменных правил — пусто).
             _ => false,
         }
     }
-    fn desc(&self) -> &str {
+    fn desc(&self) -> String {
         match self {
             Self::Never(d)
             | Self::Domain { desc: d, .. }
             | Self::Keyword { desc: d, .. }
             | Self::Regex { desc: d, .. }
-            | Self::IpCidr { desc: d, .. } => d,
+            | Self::IpCidr { desc: d, .. }
+            | Self::IpRanges(_, d) => d.clone(),
+            Self::DomainSet(_) => "domain/domain_suffix=<binary>".into(),
         }
     }
 }
@@ -110,6 +103,20 @@ impl RuleMatcher {
             rules.push(compile(r)?);
         }
         Ok(Self { rules })
+    }
+
+    /// Собрать матчер из бинарных .srs-правил (read_ruleset).
+    #[must_use]
+    pub fn from_binary(rules: Vec<crate::srs::BinaryRule>) -> Self {
+        Self {
+            rules: rules
+                .into_iter()
+                .map(|r| Node::Leaf {
+                    items: r.items,
+                    invert: r.invert,
+                })
+                .collect(),
+        }
     }
 
     /// Совпавшие правила: (индекс, описание) — печать `match rules.[i]: …`.

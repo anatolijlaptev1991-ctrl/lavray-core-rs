@@ -18,14 +18,13 @@ fn main() {
             std::process::exit(code);
         }
         Some("rule-set") => {
-            let code = match args.get(2).map(String::as_str) {
-                Some("match") => ruleset::run_match(&args[3..]),
-                _ => {
-                    eprintln!(
-                        "использование: lavray-core rule-set match <path> <домен|IP> [-f source]"
-                    );
-                    2
-                }
+            let code = if let Some("match") = args.get(2).map(String::as_str) {
+                ruleset::run_match(&args[3..])
+            } else {
+                eprintln!(
+                    "использование: lavray-core rule-set match <path> <домен|IP> [-f source|binary]"
+                );
+                2
             };
             std::process::exit(code);
         }

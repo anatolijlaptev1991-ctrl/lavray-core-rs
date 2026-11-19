@@ -7,12 +7,18 @@
 
 pub mod compile;
 pub mod matcher;
+pub mod meta;
 pub mod parse;
 pub mod raw;
 pub mod source;
+pub mod srs;
+pub mod srs_items;
+pub mod srs_reader;
 pub mod strings;
+pub mod succinct;
 
-pub use matcher::{MatchMeta, RuleMatcher};
+pub use matcher::RuleMatcher;
+pub use meta::MatchMeta;
 pub use parse::parse_source;
 pub use source::{HeadlessRule, PlainRuleSet, RuleSetParseError};
 
