@@ -46,6 +46,12 @@ impl TunDevice {
             name: name.to_string(),
         })
     }
+
+    /// Ссылка на устройство (для чтения/записи пакетов в 7f-3c-4b).
+    #[must_use]
+    pub fn device(&self) -> &tun::platform::linux::Device {
+        &self.dev
+    }
 }
 
 #[cfg(not(target_os = "linux"))]
