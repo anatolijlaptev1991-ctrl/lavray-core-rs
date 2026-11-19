@@ -20,6 +20,7 @@ pub mod ss;
 pub mod tls;
 pub mod trojan;
 pub mod tun;
+pub mod tun_device;
 pub mod vless;
 pub mod vmess;
 pub mod ws;
