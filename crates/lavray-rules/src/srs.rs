@@ -122,18 +122,18 @@ fn read_default(r: &mut Reader) -> Result<BinaryRule, RuleSetParseError> {
             ITEM_DOMAIN_KEYWORD => {
                 let v = read_strings(r)?;
                 let desc = crate::strings::go_list("domain_keyword", &v);
-                items.push(Item::Keyword { list: v, desc });
+                let pats: Vec<String> = v.iter().map(|k| regex::escape(k)).collect();
+                let set = regex::RegexSet::new(&pats)
+                    .map_err(|e| RuleSetParseError::Other(format!("domain_keyword: {e}")))?;
+                items.push(Item::Keyword { set, desc });
             }
             ITEM_DOMAIN_REGEX => {
                 let v = read_strings(r)?;
                 let desc = crate::strings::go_list("domain_regex", &v);
-                let mut list = Vec::with_capacity(v.len());
-                for pat in &v {
-                    list.push(regex::Regex::new(pat).map_err(|e| {
-                        RuleSetParseError::Other(format!("domain_regex: error parsing regexp: {e}"))
-                    })?);
-                }
-                items.push(Item::Regex { list, desc });
+                let set = regex::RegexSet::new(&v).map_err(|e| {
+                    RuleSetParseError::Other(format!("domain_regex: error parsing regexp: {e}"))
+                })?;
+                items.push(Item::Regex { set, desc });
             }
             ITEM_SOURCE_IP_CIDR => {
                 let ranges = read_ipset(r)?;

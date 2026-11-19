@@ -20,6 +20,7 @@ pub mod srs_reader;
 pub mod srs_write;
 pub mod strings;
 pub mod succinct;
+pub mod succinct_idx;
 
 pub use matcher::RuleMatcher;
 pub use meta::MatchMeta;

@@ -18,16 +18,17 @@ pub(crate) enum Item {
     /// Бинарный .srs: IP диапазоны («ip_cidr=<binary>»/«source_ip_cidr=…»).
     IpRanges(Vec<(std::net::IpAddr, std::net::IpAddr)>, String),
     Domain {
-        exact: Vec<String>,
-        dotted: Vec<String>,
+        exact: std::collections::HashSet<String>,
+        /// dot-суффиксы — succinct trie (O(len(host)), как binary .srs).
+        set: crate::succinct::SuccinctSet,
         desc: String,
     },
     Keyword {
-        list: Vec<String>,
+        set: regex::RegexSet,
         desc: String,
     },
     Regex {
-        list: Vec<regex::Regex>,
+        set: regex::RegexSet,
         desc: String,
     },
     IpCidr {
@@ -39,29 +40,29 @@ pub(crate) enum Item {
 impl Item {
     fn matches(&self, meta: &MatchMeta) -> bool {
         match (self, meta) {
-            (Self::Domain { exact, dotted, .. }, MatchMeta::Domain(host_raw)) => {
+            (Self::Domain { exact, set, .. }, MatchMeta::Domain(host_raw)) => {
                 let host = host_raw.to_lowercase();
-                if dotted.iter().any(|s| host.ends_with(s.as_str())) {
+                if set.has(crate::strings::reverse_domain(&host).as_bytes()) {
                     return true;
                 }
                 exact.contains(&host)
             }
-            (Self::Keyword { list, .. }, MatchMeta::Domain(host_raw)) => {
-                let host = host_raw.to_lowercase();
-                list.iter().any(|k| host.contains(k.as_str()))
-            }
-            (Self::Regex { list, .. }, MatchMeta::Domain(host_raw)) => {
-                let host = host_raw.to_lowercase();
-                list.iter().any(|re| re.is_match(&host))
+            (Self::Keyword { set, .. } | Self::Regex { set, .. }, MatchMeta::Domain(host_raw)) => {
+                set.is_match(&host_raw.to_lowercase())
             }
             (Self::IpCidr { nets, .. }, MatchMeta::Ip(ip)) => nets.iter().any(|n| n.contains(ip)),
             (Self::DomainSet(set), MatchMeta::Domain(host_raw)) => {
-                let rev = crate::succinct::reverse_domain(&host_raw.to_lowercase());
+                let rev = crate::strings::reverse_domain(&host_raw.to_lowercase());
                 set.has(rev.as_bytes())
             }
-            (Self::IpRanges(ranges, _), MatchMeta::Ip(ip)) => ranges
-                .iter()
-                .any(|(from, to)| crate::srs::ip_in_range(*ip, *from, *to)),
+            (Self::IpRanges(ranges, _), MatchMeta::Ip(ip)) => {
+                // диапазоны отсортированы по from: идём вниз от последнего ≤ ip
+                let start = ranges.partition_point(|(from, _)| *from <= *ip);
+                ranges[..start]
+                    .iter()
+                    .rev()
+                    .any(|(from, to)| crate::srs::ip_in_range(*ip, *from, *to))
+            }
             // доменные item'ы не матчат IP-контекст и наоборот (recorded:
             // «8.8.8.8» против доменных правил — пусто).
             _ => false,

@@ -99,11 +99,20 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
       17 тестов (recorded-семантика: bare-суффикс = exact|dot-suffix,
       dotted = только dot-suffix, process/port в CLI не матчатся, exit=0
       при промахе, вывод в stderr).
-- [ ] 7f-2: .srs binary (compile/decompile — байт-паритет), v1/v2/v4/v5
-      Upgrade, субкоманды `check`/`format` (Go-тексты ошибок JSON), TUN
-      (порт netstack), DNS-модуль (DoH/DoT/FakeIP); REALITY (TLS1.3
-      ClientHello-мимикрия); QUIC: hysteria2, tuic (quinn);
-      полный `app replay` порта по 230 кейсам.
+- [x] 7f-2a: бинарные .srs (v1–v5 reader): succinct set (побитовые
+      rank/select), IPSet-диапазоны, varbin; `rule-set match -f binary` —
+      стресс 8k-доменов и все 19 golden .srs IDENTICAL с эталоном.
+- [x] 7f-2b: субкоманды `check`/`format`/`rule-set format|compile` —
+      replay 227/227 порта против записи эталона байт-в-байт (Go-тексты
+      ошибок encoding/json, cobra help/флаги, Listable-синглтоны,
+      ANSI-FATAL, [CWD]-нормализация); .srs writer (round-trip через
+      эталон); крейт lavray-sbconfig; perf: Criterion bench, exact →
+      HashSet, суффиксы → succinct trie, keyword/regex → RegexSet,
+      IpRanges → сортировка+partition_point (hit 44µs → 0.68µs, 65×).
+- [ ] 7f-3: v1/v2/v4/v5 Upgrade-семантика, AdGuard-матчер, logical
+      binary-правила, TUN (порт netstack), DNS-модуль (DoH/DoT/FakeIP);
+      REALITY (TLS1.3 ClientHello-мимикрия); QUIC: hysteria2, tuic
+      (quinn); CLI-кейсы cobra (version/help/unknown) — байт-паритет.
 - [x] 7g (MVP): бинарь `lavray-core serve` (паритет запуска Go) + API-интеграция.
 - [ ] gateway (OpenWrt tproxy/nftables), updates, MCP.
 - [ ] Сквозные тесты с реальным движком (в т.ч. против эталонных серверов).

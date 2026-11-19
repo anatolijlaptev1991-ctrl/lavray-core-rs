@@ -29,6 +29,12 @@ pub fn domain_item(domains: &[String], suffixes: &[String]) -> String {
     parts.join(" ")
 }
 
+/// Реверс домена по РУНАМ (Go utf8.DecodeRuneInString, не байты).
+#[must_use]
+pub fn reverse_domain(domain: &str) -> String {
+    domain.chars().rev().collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

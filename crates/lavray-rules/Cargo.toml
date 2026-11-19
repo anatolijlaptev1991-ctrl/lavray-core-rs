@@ -18,6 +18,11 @@ ipnet = "2"
 flate2 = "1"
 
 [dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "matcher"
+harness = false
 
 [lints]
 workspace = true

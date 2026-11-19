@@ -2,7 +2,7 @@
 
 //! Юнит-тесты succinct set (порт sing/common/domain/set.go).
 
-use lavray_rules::succinct::reverse_domain;
+use lavray_rules::strings::reverse_domain;
 
 #[test]
 fn reverse_by_runes() {

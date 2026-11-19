@@ -37,6 +37,15 @@ impl SuccinctSet {
             }
         }
         let zeros_count = last_one_index.map_or(0, |i| i + 1 - ones_count);
+        if label_bitmap.is_empty() {
+            return Ok(Self {
+                leaves,
+                label_bitmap,
+                labels,
+                ranks: Vec::new(),
+                selects: Vec::new(),
+            });
+        }
         if ones_count != zeros_count + 1 || labels.len() != zeros_count {
             return Err("domain: malformed succinct set".into());
         }
@@ -56,29 +65,8 @@ impl SuccinctSet {
     }
 
     fn init(&mut self) {
-        // selects: позиция каждого 32-го бита-единицы (indexSelect32R64).
-        let total_bits = self.label_bitmap.len() << 6;
-        let mut sidx = Vec::new();
-        let mut ones_seen: usize = 0;
-        for i in 0..total_bits {
-            if Self::get_bit(&self.label_bitmap, i) {
-                // позиция каждой 32-й единицы (k-я, k % 32 == 1)
-                if ones_seen.trailing_zeros() >= 5 {
-                    sidx.push(i);
-                }
-                ones_seen += 1;
-            }
-        }
-        self.selects = sidx;
-        // ranks: префикс-суммы popcount по словам (+1 trailing).
-        let mut idx = Vec::with_capacity(self.label_bitmap.len() + 1);
-        let mut n: usize = 0;
-        for &w in &self.label_bitmap {
-            idx.push(n);
-            n += w.count_ones() as usize;
-        }
-        idx.push(n);
-        self.ranks = idx;
+        self.selects = crate::succinct_idx::build_selects(&self.label_bitmap);
+        self.ranks = crate::succinct_idx::build_ranks(&self.label_bitmap);
     }
 
     fn get_bit(bm: &[u64], i: usize) -> bool {
@@ -134,15 +122,18 @@ impl SuccinctSet {
         let pos_in_byte = if ones <= find_ith {
             // единица — в старших 8 битах младших 16
             let hi = (ww >> 8) as u8;
-            select8(hi, find_ith - ones) + 8
+            crate::succinct_idx::select8(hi, find_ith - ones) + 8
         } else {
-            select8(byte, find_ith)
+            crate::succinct_idx::select8(byte, find_ith)
         };
         base + pos_in_byte as usize + offset as usize
     }
 
-    /// Матчинг по реверс-ключу (has() Go).
+    /// Матчинг по реверс-ключу (has() Go). Пустое множество — всегда false.
     pub fn has(&self, key: &[u8]) -> bool {
+        if self.label_bitmap.is_empty() {
+            return false;
+        }
         let mut node_id: usize = 0;
         let mut bm_idx: usize = 0;
         for &current_char in key {
@@ -183,18 +174,4 @@ impl SuccinctSet {
             bm_idx += 1;
         }
     }
-}
-
-/// Реверс домена по РУНАМ (Go utf8.DecodeRuneInString, не байты).
-pub fn reverse_domain(domain: &str) -> String {
-    domain.chars().rev().collect()
-}
-
-/// Позиция k-й единицы в байте (порт select8Lookup; 8 = не найдена).
-fn select8(byte: u8, k: usize) -> u32 {
-    let mut w = byte;
-    for _ in 0..k {
-        w &= w - 1;
-    }
-    if w == 0 { 8 } else { w.trailing_zeros() }
 }

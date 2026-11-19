@@ -5,6 +5,9 @@
 
 /// (leaves, labelBitmap, labels) — как Go newSuccinctSet.
 pub(crate) fn build_succinct(keys: &[Vec<u8>]) -> (Vec<u64>, Vec<u64>, Vec<u8>) {
+    if keys.is_empty() {
+        return (Vec::new(), Vec::new(), Vec::new());
+    }
     let mut leaves: Vec<u64> = Vec::new();
     let mut label_bitmap: Vec<u64> = Vec::new();
     let mut labels: Vec<u8> = Vec::new();

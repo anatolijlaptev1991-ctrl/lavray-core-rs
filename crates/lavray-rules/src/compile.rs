@@ -23,37 +23,43 @@ pub(crate) fn compile_items(d: &DefaultRule) -> Result<Vec<Item>, RuleSetParseEr
         // bare-суффикс: host==suffix ИЛИ host.ends_with(".suffix");
         // суффикс с точкой: только ends_with (recorded: ".googleapis.com"
         // НЕ матчит ровно googleapis.com; bare — матчит и ровно, и под-).
-        let mut exact = d.domain.clone();
-        let mut dotted: Vec<String> = Vec::new();
+        let mut exact: std::collections::HashSet<String> = d.domain.iter().cloned().collect();
+        let mut dotted: Vec<Vec<u8>> = Vec::new();
         for s in &d.domain_suffix {
             if let Some(stripped) = s.strip_prefix('.') {
-                dotted.push(format!(".{stripped}"));
+                dotted.push(reverse_key(&format!(".{stripped}")));
             } else {
-                exact.push(s.clone());
-                dotted.push(format!(".{s}"));
+                exact.insert(s.clone());
+                dotted.push(reverse_key(&format!(".{s}")));
             }
         }
+        dotted.sort();
+        dotted.dedup();
+        let (leaves, label_bitmap, labels) = crate::srs_build::build_succinct(&dotted);
+        let set = crate::succinct::SuccinctSet::from_parts(leaves, label_bitmap, labels)
+            .map_err(RuleSetParseError::Other)?;
         items.push(Item::Domain {
             exact,
-            dotted,
+            set,
             desc: domain_item(&d.domain, &d.domain_suffix),
         });
     }
     if !d.domain_keyword.is_empty() {
+        // литеральные подстроки — один RegexSet-проход (экранирование)
+        let pats: Vec<String> = d.domain_keyword.iter().map(|k| regex::escape(k)).collect();
+        let set = regex::RegexSet::new(&pats)
+            .map_err(|e| RuleSetParseError::Other(format!("domain_keyword: {e}")))?;
         items.push(Item::Keyword {
-            list: d.domain_keyword.clone(),
+            set,
             desc: go_list("domain_keyword", &d.domain_keyword),
         });
     }
     if !d.domain_regex.is_empty() {
-        let mut list = Vec::with_capacity(d.domain_regex.len());
-        for r in &d.domain_regex {
-            list.push(regex::Regex::new(r).map_err(|e| {
-                RuleSetParseError::Other(format!("domain_regex: error parsing regexp: {e}"))
-            })?);
-        }
+        let set = regex::RegexSet::new(&d.domain_regex).map_err(|e| {
+            RuleSetParseError::Other(format!("domain_regex: error parsing regexp: {e}"))
+        })?;
         items.push(Item::Regex {
-            list,
+            set,
             desc: go_list("domain_regex", &d.domain_regex),
         });
     }
@@ -124,4 +130,11 @@ fn ip_item(source: bool, cidrs: &[String]) -> Result<Item, RuleSetParseError> {
         nets,
         desc: go_list(field, cidrs),
     })
+}
+
+/// Реверс-ключ dot-суффикса для succinct trie: reverse(PREFIX_LABEL+suffix).
+fn reverse_key(suffix: &str) -> Vec<u8> {
+    let prefix = char::from_u32(0x0d).unwrap_or('?');
+    let labeled: String = std::iter::once(prefix).chain(suffix.chars()).collect();
+    labeled.chars().rev().collect::<String>().into_bytes()
 }
