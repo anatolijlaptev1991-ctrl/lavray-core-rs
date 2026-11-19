@@ -1,0 +1,55 @@
+{
+  "route": {
+    "rules": [
+      {
+        "protocol": "dns",
+        "action": "hijack-dns"
+      },
+      {
+        "domain_suffix": [
+          ".cn"
+        ],
+        "outbound": "direct"
+      },
+      {
+        "ip_cidr": [
+          "10.0.0.0/8",
+          "192.168.0.0/16"
+        ],
+        "outbound": "direct"
+      },
+      {
+        "process_name": [
+          "game.exe"
+        ],
+        "outbound": "direct"
+      },
+      {
+        "domain_keyword": [
+          "ads"
+        ],
+        "action": "reject"
+      }
+    ],
+    "final": "proxy",
+    "auto_detect_interface": true
+  },
+  "inbounds": [
+    {
+      "type": "mixed",
+      "tag": "in",
+      "listen": "127.0.0.1",
+      "listen_port": 2080
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "proxy"
+    },
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ]
+}

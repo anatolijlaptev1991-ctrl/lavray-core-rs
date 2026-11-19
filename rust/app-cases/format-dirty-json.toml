@@ -1,0 +1,5 @@
+bin.name = "sing-box"
+args = ["format", "-c", "config.json"]
+status.code = 0
+fs.sandbox = true
+fs.base = "format-dirty-json.in"

@@ -1,0 +1,5 @@
+bin.name = "sing-box"
+args = ["rule-set", "match", "missing-input.txt", "ads-42.example.com"]
+status.code = 1
+fs.sandbox = true
+fs.base = "trap-086-rule-set.in"

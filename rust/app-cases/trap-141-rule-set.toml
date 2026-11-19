@@ -1,0 +1,5 @@
+bin.name = "sing-box"
+args = ["rule-set", "👍🏽 thumbs", "rs-proc.json", "telegram.exe"]
+status.code = 0
+fs.sandbox = true
+fs.base = "trap-141-rule-set.in"

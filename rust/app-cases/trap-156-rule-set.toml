@@ -1,0 +1,5 @@
+bin.name = "sing-box"
+args = ["rule-set", "match", "rs-proc.json", "İstanbul"]
+status.code = 0
+fs.sandbox = true
+fs.base = "trap-156-rule-set.in"

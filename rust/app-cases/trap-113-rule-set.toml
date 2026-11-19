@@ -1,0 +1,5 @@
+bin.name = "sing-box"
+args = ["rule-set", "match", "rs-ips.json", "é"]
+status.code = 0
+fs.sandbox = true
+fs.base = "trap-113-rule-set.in"

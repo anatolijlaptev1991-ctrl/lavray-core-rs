@@ -1,0 +1,8 @@
+{
+  "schema": "rust-anything/app-cases@1",
+  "name": "sing-box",
+  "run": [
+    "../_deps/sing-box-etalon.exe"
+  ],
+  "timeout_secs": 30
+}

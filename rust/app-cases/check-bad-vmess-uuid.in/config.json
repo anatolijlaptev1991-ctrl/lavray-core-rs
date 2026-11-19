@@ -1,0 +1,23 @@
+{
+  "inbounds": [
+    {
+      "type": "mixed",
+      "tag": "in",
+      "listen": "127.0.0.1",
+      "listen_port": 2080
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "vmess",
+      "tag": "p",
+      "server": "192.0.2.1",
+      "server_port": 443,
+      "uuid": "not-a-uuid"
+    },
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ]
+}

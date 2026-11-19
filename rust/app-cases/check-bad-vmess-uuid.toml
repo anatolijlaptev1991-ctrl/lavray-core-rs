@@ -1,0 +1,5 @@
+bin.name = "sing-box"
+args = ["check", "-c", "config.json"]
+status.code = 0
+fs.sandbox = true
+fs.base = "check-bad-vmess-uuid.in"

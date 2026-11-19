@@ -1,0 +1,1 @@
+[31mFATAL[0m[0000] decode config at config.json: inbounds[0].listen_port: json: cannot unmarshal string into Go struct field HTTPMixedInboundOptions.ListenOptions.listen_port of type uint16

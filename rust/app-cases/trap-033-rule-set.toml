@@ -1,0 +1,5 @@
+bin.name = "sing-box"
+args = ["rule-set", "héllo wörld", "rs.json", "www.google.com"]
+status.code = 0
+fs.sandbox = true
+fs.base = "trap-033-rule-set.in"

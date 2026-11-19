@@ -1,0 +1,3 @@
+{"name": "version", "args": ["version"]}
+{"name": "check-golden-01", "args": ["check", "-c", "crates/lavray-cfgbuild/tests/testdata/golden/G01.want.json"]}
+{"name": "check-broken-json", "args": ["check", "-c", "probe-bad.json"], "files": {"probe-bad.json": "{ not json"}}

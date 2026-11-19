@@ -1,0 +1,4 @@
+bin.name = "sing-box"
+args = ["no-such-command"]
+status.code = 1
+fs.sandbox = true

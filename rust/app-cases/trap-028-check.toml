@@ -1,0 +1,4 @@
+bin.name = "sing-box"
+args = ["check", "-c", "straße"]
+status.code = 1
+fs.sandbox = true

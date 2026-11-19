@@ -1,0 +1,5 @@
+bin.name = "sing-box"
+args = ["rule-set", "compile", "rs.json", "-o", ""]
+status.code = 1
+fs.sandbox = true
+fs.base = "trap-175-rule-set.in"

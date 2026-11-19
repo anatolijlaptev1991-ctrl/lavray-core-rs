@@ -1,0 +1,24 @@
+{
+  "inbounds": [
+    {
+      "type": "mixed",
+      "tag": "in",
+      "listen": "127.0.0.1",
+      "listen_port": 2080
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "shadowsocks",
+      "tag": "proxy",
+      "server": "192.0.2.1",
+      "server_port": 8388,
+      "method": "2022-blake3-aes-128-gcm",
+      "password": "aaaaaaaaaaaaaaaaaaaaaa=="
+    },
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ]
+}

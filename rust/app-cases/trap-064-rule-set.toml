@@ -1,0 +1,5 @@
+bin.name = "sing-box"
+args = ["rule-set", "match", "missing-input.txt", "api.googleapis.com"]
+status.code = 1
+fs.sandbox = true
+fs.base = "trap-064-rule-set.in"

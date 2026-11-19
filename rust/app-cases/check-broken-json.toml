@@ -1,0 +1,5 @@
+bin.name = "sing-box"
+args = ["check", "-c", "bad.json"]
+status.code = 1
+fs.sandbox = true
+fs.base = "check-broken-json.in"

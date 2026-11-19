@@ -1,0 +1,5 @@
+bin.name = "sing-box"
+args = ["rule-set", "straße", "rs.json", "gemini.google.com"]
+status.code = 0
+fs.sandbox = true
+fs.base = "trap-071-rule-set.in"

@@ -73,9 +73,9 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
       (DATA_LOSS на повреждение), plan_insert (mint custom:<slug>),
       активный в settings `routing.active_preset` (F2 аудита №7), удаление
       активного → «global» + снятие DNS-карточки, конфликт ревизий ABORTED.
-- [ ] Волна 6.5: конвертер маршрутов NekoRay 4.x (DetectAndParse-NekoRay +
-      ImportNekoRayRoute; сейчас честный UNIMPLEMENTED), DnsService,
-      переопределения builtin (<данные>/presets/override, T-75/7.5).
+- [x] Волна 6.5: конвертер маршрутов NekoRay 4.x (порт Go convert.go),
+      DnsService (GetDns/SetDns карточки T-31 + ValidateDnsJson FR-UI-149).
+- [ ] Переопределения builtin (<данные>/presets/override, T-75/7.5).
 - [ ] Остальные сервисы (Core/Subscription/Log/Stats/Connection/
       Diagnostics/Backup/Gateway/WebSession/Agent) — по мере движка (волна 7).
 - [x] Интеграционные тесты API (347 всего; RoutingService — 15).
@@ -85,16 +85,29 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
 Владелец выбрал полный перепись движка на Rust — без Go sing-box (ни child,
 ни FFI). Порядок волн (каждая = работающий инкремент со сквозными тестами):
 
-- [ ] 7a: Engine-каркас + mixed-инбаунд (SOCKS5/HTTP CONNECT) + outbound
+- [x] 7a: Engine-каркас + mixed-инбаунд (SOCKS5/HTTP CONNECT) + outbound
       direct + прокси-цикл — первый сквозной трафик через Rust.
-- [ ] 7b: shadowsocks AEAD-2022 (клиент + тестовый сервер, e2e loopback).
-- [ ] 7c: trojan (rustls) + vmess.
-- [ ] 7d: vless + REALITY (свой TLS1.3 ClientHello-мимикрия).
-- [ ] 7e: ws/httpupgrade транспорты; QUIC: hysteria2, tuic (quinn).
-- [ ] 7f: TUN (порт netstack), rule engine, .srs, DNS-модуль (DoH/DoT/FakeIP).
-- [ ] 7g: бинарь `lavray-core serve` (паритет запуска Go) + API-интеграция.
+- [x] 7b: shadowsocks AEAD-2022 (клиент + тестовый сервер, e2e loopback).
+- [x] 7c: trojan (rustls) + vmess (AEAD, alterId=0, паритет sing-vmess v0.2.8).
+- [x] 7d: vless v0 (REALITY — в 7f-цикле).
+- [x] 7e: WebSocket-транспорт RFC 6455 (клиент + сервер).
+- [ ] 7f: TUN (порт netstack), rule engine, .srs, DNS-модуль (DoH/DoT/FakeIP);
+      REALITY (TLS1.3 ClientHello-мимикрия); QUIC: hysteria2, tuic (quinn);
+      субкоманды `check`/`format`/`rule-set` в бинаре — приёмка по эталонным
+      app-cases (см. `etalon/README.md`, 230 кейсов recorded behavior Go).
+- [x] 7g (MVP): бинарь `lavray-core serve` (паритет запуска Go) + API-интеграция.
 - [ ] gateway (OpenWrt tproxy/nftables), updates, MCP.
 - [ ] Сквозные тесты с реальным движком (в т.ч. против эталонных серверов).
+
+## Эталон recorded behavior (rust-anything, 19.11)
+
+Установлен `rust-anything` v1.5.1 (CLI + MCP + скилл у агентов); Go-эталон
+sing-box 1.14.1-neko.1 собирается обёрткой `../sing-box/etalon-main`
+(полные релизные теги). `rust/app-cases/` — 230 trycmd-кейсов (38 осознанных +
+192 ловушек), запись верифицирована `app replay` 230/230. Процесс и границы —
+`etalon/README.md`. Кейсы `check-*`/`rs-*` — приёмочный набор волны 7f;
+все 37 golden cfgbuild подтверждены эталонным `check` (29 сразу + 8 после
+генерации `golden/geo/*.srs`).
 
 ## Критерии готовности ядра
 

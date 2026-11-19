@@ -1,0 +1,5 @@
+bin.name = "sing-box"
+args = ["rule-set", "match", "rs.json", "日本語"]
+status.code = 0
+fs.sandbox = true
+fs.base = "trap-046-rule-set.in"

@@ -1,0 +1,5 @@
+bin.name = "sing-box"
+args = ["rule-set", "format", "missing-input.txt"]
+status.code = 1
+fs.sandbox = true
+fs.base = "trap-192-rule-set.in"

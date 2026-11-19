@@ -1,0 +1,1 @@
+match rules.[3]: domain_regex=^ads-[0-9]+\.example\.com$

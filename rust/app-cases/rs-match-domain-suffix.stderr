@@ -1,0 +1,1 @@
+match rules.[1]: domain_suffix=[.googleapis.com .doubleclick.net]

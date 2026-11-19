@@ -1,0 +1,5 @@
+bin.name = "sing-box"
+args = ["rule-set", "👨‍👩‍👧 family", "rs.json", "gemini.google.com"]
+status.code = 0
+fs.sandbox = true
+fs.base = "trap-073-rule-set.in"
