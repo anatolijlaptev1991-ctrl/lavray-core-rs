@@ -5,7 +5,7 @@
 use crate::addr::TargetAddr;
 
 /// Адрес VMess: ПОРТ ПЕРЕД адресом (PortThenAddress).
-pub(super) fn parse_addr(b: &[u8]) -> std::io::Result<(TargetAddr, usize)> {
+pub(crate) fn parse_addr(b: &[u8]) -> std::io::Result<(TargetAddr, usize)> {
     if b.len() < 3 {
         return Err(std::io::Error::other("vmess: адрес короткий"));
     }

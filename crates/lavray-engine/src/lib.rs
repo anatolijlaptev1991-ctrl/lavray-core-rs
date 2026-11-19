@@ -16,7 +16,9 @@ pub mod server;
 pub mod sniff;
 pub mod socks5;
 pub mod ss;
+pub mod tls;
 pub mod trojan;
+pub mod vless;
 pub mod vmess;
 
 pub use addr::TargetAddr;

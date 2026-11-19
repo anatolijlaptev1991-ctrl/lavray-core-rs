@@ -11,6 +11,7 @@ use crate::addr::TargetAddr;
 use crate::relay::{UpRead, UpWrite};
 use crate::ss::client::{self, SsOutbound};
 use crate::trojan::{self, TrojanOutbound};
+use crate::vless::{self, VlessOutbound};
 use crate::vmess::{self, VmessOutbound};
 
 /// Таймаут установки исходящего соединения (паритет sing-box 5 c).
@@ -28,6 +29,8 @@ pub enum Outbound {
     Trojan(Box<TrojanOutbound>),
     /// VMess AEAD (волна 7c).
     Vmess(Box<VmessOutbound>),
+    /// VLESS v0 (волна 7d), TLS или plain.
+    Vless(Box<VlessOutbound>),
 }
 
 impl Outbound {
@@ -45,6 +48,7 @@ impl Outbound {
             }
             Self::Trojan(o) => trojan::client::connect(o, target).await,
             Self::Vmess(o) => vmess::client::connect(o, target).await,
+            Self::Vless(o) => vless::client::connect(o, target).await,
         }
     }
 }
