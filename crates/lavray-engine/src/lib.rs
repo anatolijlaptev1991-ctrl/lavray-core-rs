@@ -19,6 +19,7 @@ pub mod socks5;
 pub mod ss;
 pub mod tls;
 pub mod trojan;
+pub mod tun;
 pub mod vless;
 pub mod vmess;
 pub mod ws;
