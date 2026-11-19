@@ -5,8 +5,10 @@
 //! `route/rule` (NewHeadlessRule/DomainItem/IPCIDRItem/…) по recorded
 //! behavior эталона 1.14.1-neko.1 (`etalon/README.md`, кейсы `rs-*`).
 
+pub mod adguard;
 pub mod compile;
 pub mod format;
+pub mod items;
 pub mod matcher;
 pub mod meta;
 pub mod parse;

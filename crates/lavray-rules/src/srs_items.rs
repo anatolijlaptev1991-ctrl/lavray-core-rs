@@ -3,7 +3,7 @@
 //! Предметные ридеры .srs: строковые/uint16 item'ы, succinct set,
 //! IP-диапазоны, адреса/префиксы (порт varbin-частей binary.go).
 
-use crate::matcher::Item;
+use crate::items::Item;
 
 pub(crate) const ITEM_QUERY_TYPE: u8 = 0;
 pub(crate) const ITEM_NETWORK: u8 = 1;

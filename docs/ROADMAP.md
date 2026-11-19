@@ -109,10 +109,14 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
       эталон); крейт lavray-sbconfig; perf: Criterion bench, exact →
       HashSet, суффиксы → succinct trie, keyword/regex → RegexSet,
       IpRanges → сортировка+partition_point (hit 44µs → 0.68µs, 65×).
-- [ ] 7f-3: v1/v2/v4/v5 Upgrade-семантика, AdGuard-матчер, logical
-      binary-правила, TUN (порт netstack), DNS-модуль (DoH/DoT/FakeIP);
-      REALITY (TLS1.3 ClientHello-мимикрия); QUIC: hysteria2, tuic
-      (quinn); CLI-кейсы cobra (version/help/unknown) — байт-паритет.
+- [x] 7f-3a: AdGuard-матчер (||x^, |x^, *-подстановки, рекурсия 100) +
+      logical binary-правила (and/or/invert, подправила с полными
+      item'ами) — живое сравнение с эталоном 32/32 IDENTICAL
+      (большой+adguard+logical+golden наборы).
+- [ ] 7f-3b: v1/v2/v4/v5 Upgrade-семантика, TUN (порт netstack),
+      DNS-модуль (DoH/DoT/FakeIP); REALITY (TLS1.3 ClientHello-мимикрия);
+      QUIC: hysteria2, tuic (quinn); CLI-кейсы cobra
+      (version/help/unknown) — байт-паритет.
 - [x] 7g (MVP): бинарь `lavray-core serve` (паритет запуска Go) + API-интеграция.
 - [ ] gateway (OpenWrt tproxy/nftables), updates, MCP.
 - [ ] Сквозные тесты с реальным движком (в т.ч. против эталонных серверов).

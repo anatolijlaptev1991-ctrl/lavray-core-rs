@@ -4,7 +4,8 @@
 //! magic «SRS» + version + zlib(uvarint count + правила). Домены —
 //! succinct set, IP — диапазоны; описания `<binary>` (паритет CLI).
 
-use crate::matcher::Item;
+use crate::items::Item;
+use crate::meta::MatchMeta;
 use crate::source::RuleSetParseError;
 use crate::srs_items::{
     ITEM_ADGUARD_DOMAIN, ITEM_DEFAULT_IFACE_ADDR, ITEM_DOMAIN, ITEM_DOMAIN_KEYWORD,
@@ -51,9 +52,18 @@ pub fn read_ruleset(raw: &[u8]) -> Result<Vec<BinaryRule>, RuleSetParseError> {
 }
 
 /// Одна запись правил binary: item'ы + флаги для `matches`.
+#[derive(Debug, Clone)]
 pub struct BinaryRule {
     pub(crate) items: Vec<Item>,
     pub(crate) invert: bool,
+}
+
+/// Матчинг binary-правила (AND item'ов, invert) — общий для top-level
+/// и логических подправил.
+#[must_use]
+pub(crate) fn binary_rule_matches(rule: &[Item], invert: bool, meta: &MatchMeta) -> bool {
+    let m = rule.iter().all(|it| it.matches(meta));
+    m != invert
 }
 
 /// Диапазон IP (netipx: from <= ip <= to в пределах одного семейства).
@@ -82,20 +92,31 @@ fn read_rule(r: &mut Reader, depth: usize) -> Result<BinaryRule, RuleSetParseErr
 }
 
 fn read_logical(r: &mut Reader, depth: usize) -> Result<BinaryRule, RuleSetParseError> {
-    // Логическое правило в binary: mode + подправила + invert — материализуем
-    // в item'ы нельзя без расширения модели; ошибка домена (CLI-контекст
-    // логических .srs не проверяется эталонными кейсами — подволнна 7f-3).
-    let _mode = r.u8()?;
+    if depth > MAX_LOGICAL_DEPTH {
+        return Err(RuleSetParseError::Other(
+            "logical rule nested too deep".into(),
+        ));
+    }
+    let mode = r.u8()?;
+    if mode > 1 {
+        return Err(RuleSetParseError::Other(format!(
+            "unknown logical mode: {mode}"
+        )));
+    }
     let count = r.uvarint_usize()?;
     let mut sub = Vec::with_capacity(count.min(1 << 12));
     for _ in 0..count {
         sub.push(read_rule(r, depth + 1)?);
     }
-    let _invert = r.u8()?;
-    Err(RuleSetParseError::Other(format!(
-        "logical binary rule ({} sub-rules) — подволнна 7f-3",
-        sub.len()
-    )))
+    let invert = r.u8()? != 0;
+    Ok(BinaryRule {
+        items: vec![Item::Logical {
+            mode_or: mode == 1,
+            sub,
+            invert,
+        }],
+        invert: false,
+    })
 }
 
 fn read_default(r: &mut Reader) -> Result<BinaryRule, RuleSetParseError> {
@@ -144,10 +165,8 @@ fn read_default(r: &mut Reader) -> Result<BinaryRule, RuleSetParseError> {
                 items.push(Item::IpRanges(ranges, "ip_cidr=<binary>".into()));
             }
             ITEM_ADGUARD_DOMAIN => {
-                // AdGuard-матчер — отдельный формат; в 7f-3.
-                return Err(RuleSetParseError::Other(
-                    "adguard binary item — подволнна 7f-3".into(),
-                ));
+                let matcher = crate::adguard::AdGuardMatcher::read(r)?;
+                items.push(Item::AdGuard(matcher));
             }
             ITEM_NETWORK_TYPE => {
                 let n = r.uvarint_usize()?;

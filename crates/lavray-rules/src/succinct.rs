@@ -10,11 +10,11 @@ const ROOT_LABEL: u8 = b'\n';
 /// Succinct-множество реверс-доменов.
 #[derive(Debug, Clone)]
 pub struct SuccinctSet {
-    leaves: Vec<u64>,
-    label_bitmap: Vec<u64>,
-    labels: Vec<u8>,
-    ranks: Vec<usize>,
-    selects: Vec<usize>,
+    pub(crate) leaves: Vec<u64>,
+    pub(crate) label_bitmap: Vec<u64>,
+    pub(crate) labels: Vec<u8>,
+    pub(crate) ranks: Vec<usize>,
+    pub(crate) selects: Vec<usize>,
 }
 
 impl SuccinctSet {
@@ -64,21 +64,21 @@ impl SuccinctSet {
         Ok(set)
     }
 
-    fn init(&mut self) {
+    pub(crate) fn init(&mut self) {
         self.selects = crate::succinct_idx::build_selects(&self.label_bitmap);
         self.ranks = crate::succinct_idx::build_ranks(&self.label_bitmap);
     }
 
-    fn get_bit(bm: &[u64], i: usize) -> bool {
+    pub(crate) fn get_bit(bm: &[u64], i: usize) -> bool {
         bm[i >> 6] & (1_u64 << (i & 63)) != 0
     }
 
-    fn count_zeros(&self, i: usize) -> usize {
+    pub(crate) fn count_zeros(&self, i: usize) -> usize {
         i - self.rank(i)
     }
 
     /// Кол-во единиц в первых i битах (rank64: сумма слов до wordI + хвост).
-    fn rank(&self, i: usize) -> usize {
+    pub(crate) fn rank(&self, i: usize) -> usize {
         let word_i = i >> 6;
         let j = i & 63;
         // ranks с trailing-словом: word_i ≤ len(label_bitmap)
@@ -94,7 +94,7 @@ impl SuccinctSet {
     /// Позиция i-й единицы (порт select32R64: спуск 32/16/8 + select8).
     // Сужения u64→u32/u16/u8 — сама суть побитового спуска (порт Go).
     #[allow(clippy::cast_possible_truncation)]
-    fn select_ith_one(&self, i: usize) -> usize {
+    pub(crate) fn select_ith_one(&self, i: usize) -> usize {
         // Стартовое слово — из selects-индекса (каждая 32-я единица).
         let mut word_i = self.selects[i >> 5] >> 6;
         while word_i + 1 < self.ranks.len() && self.ranks[word_i + 1] <= i {

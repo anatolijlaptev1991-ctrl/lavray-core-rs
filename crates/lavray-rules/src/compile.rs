@@ -3,7 +3,7 @@
 //! Компиляция DefaultRule → item'ы в ПОРЯДКЕ Go `NewDefaultHeadlessRule`
 //! (порядок виден в описании правила: `query_type=… network=… domain=… …`).
 
-use crate::matcher::Item;
+use crate::items::Item;
 use crate::source::{DefaultRule, RuleSetParseError};
 use crate::strings::{domain_item, go_list};
 
