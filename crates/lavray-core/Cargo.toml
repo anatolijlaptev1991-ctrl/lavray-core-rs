@@ -18,6 +18,7 @@ lavray-api = { path = "../lavray-api" }
 lavray-engine = { path = "../lavray-engine" }
 lavray-proto = { path = "../lavray-proto" }
 lavray-rules = { path = "../lavray-rules" }
+lavray-sbconfig = { path = "../lavray-sbconfig" }
 lavray-store = { path = "../lavray-store" }
 tokio = { workspace = true }
 tonic = { workspace = true }

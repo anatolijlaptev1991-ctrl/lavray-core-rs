@@ -35,7 +35,7 @@
   "crates/lavray-cfgbuild/src/filekeys.rs": 149,
   "crates/lavray-cfgbuild/src/hy2ports.rs": 66,
   "crates/lavray-cfgbuild/src/inbounds.rs": 177,
-  "crates/lavray-cfgbuild/src/lib.rs": 117,
+  "crates/lavray-cfgbuild/src/lib.rs": 136,
   "crates/lavray-cfgbuild/src/merge.rs": 58,
   "crates/lavray-cfgbuild/src/merge_custom.rs": 192,
   "crates/lavray-cfgbuild/src/outbounds.rs": 187,

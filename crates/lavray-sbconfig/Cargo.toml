@@ -1,0 +1,17 @@
+# lavray-sbconfig — валидация и форматирование конфига sing-box
+# (паритет вердиктов/текстов Go 1.14.1 по recorded app-cases, волна 7f-2b).
+
+[package]
+name = "lavray-sbconfig"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde_json = { workspace = true, features = ["preserve_order"] }
+
+[lints]
+workspace = true

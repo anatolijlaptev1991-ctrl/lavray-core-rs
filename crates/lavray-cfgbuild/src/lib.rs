@@ -110,8 +110,27 @@ pub fn build(req: BuildRequest<'_>) -> Result<BuildResult> {
 }
 
 /// Детерминированный JSON конфига (2 пробела, ключи сортированы) — паритет
-/// Go `MarshalIndent`. serde_json Map без preserve_order = BTreeMap.
+/// Go `MarshalIndent`. Канонизация — ЯВНАЯ рекурсивная сортировка ключей:
+/// фича preserve_order у соседних крейтов (feature-union по графу) меняет
+/// serde_json::Map на IndexMap, и сортировка «сама собой» исчезла бы.
 pub fn marshal_indent(cfg: &Obj) -> Result<String> {
-    serde_json::to_string_pretty(&Value::Object(cfg.clone()))
+    let sorted = canonical_sorted(&Value::Object(cfg.clone()));
+    serde_json::to_string_pretty(&sorted)
         .map_err(|e| Error::invalid("config", format!("marshal config: {e}")))
+}
+
+/// Рекурсивно: объекты → BTreeMap-порядок (сортировка ключей).
+fn canonical_sorted(v: &Value) -> Value {
+    match v {
+        Value::Object(map) => {
+            let sorted: std::collections::BTreeMap<&String, &Value> = map.iter().collect();
+            let out: serde_json::Map<String, Value> = sorted
+                .into_iter()
+                .map(|(k, val)| (k.clone(), canonical_sorted(val)))
+                .collect();
+            Value::Object(out)
+        }
+        Value::Array(arr) => Value::Array(arr.iter().map(canonical_sorted).collect()),
+        other => other.clone(),
+    }
 }

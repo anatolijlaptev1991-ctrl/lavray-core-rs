@@ -6,14 +6,18 @@
 //! behavior эталона 1.14.1-neko.1 (`etalon/README.md`, кейсы `rs-*`).
 
 pub mod compile;
+pub mod format;
 pub mod matcher;
 pub mod meta;
 pub mod parse;
 pub mod raw;
 pub mod source;
 pub mod srs;
+pub mod srs_build;
+pub mod srs_enc;
 pub mod srs_items;
 pub mod srs_reader;
+pub mod srs_write;
 pub mod strings;
 pub mod succinct;
 

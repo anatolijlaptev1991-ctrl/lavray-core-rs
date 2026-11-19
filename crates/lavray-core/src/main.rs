@@ -6,6 +6,8 @@
 //! строкой LAVRAY_CORE_READY в stdout. Named pipe Windows и полный
 //! lifecycle-интерсептор — следующие подволнны (ROADMAP 7g).
 
+mod cli;
+mod cli_help;
 mod listener;
 mod ruleset;
 mod serve;
@@ -18,15 +20,29 @@ fn main() {
             std::process::exit(code);
         }
         Some("rule-set") => {
-            let code = if let Some("match") = args.get(2).map(String::as_str) {
-                ruleset::run_match(&args[3..])
-            } else {
-                eprintln!(
-                    "использование: lavray-core rule-set match <path> <домен|IP> [-f source|binary]"
-                );
-                2
+            let code = match args.get(2).map(String::as_str) {
+                Some("match") => ruleset::run_match(&args[3..]),
+                Some("format") => ruleset::run_format(&args[3..]),
+                Some("compile") => ruleset::run_compile(&args[3..]),
+                _ => {
+                    // CLI-паритет cobra: неизвестный флаг — Error+usage+FATAL
+                    // (exit 1); иначе help группы в stdout, exit 0.
+                    if let Some(flag) = cli::first_unknown_group_flag(&args[3..]) {
+                        cli::ruleset_unknown_flag(&flag);
+                        1
+                    } else {
+                        println!("{}", cli::RULESET_HELP);
+                        0
+                    }
+                }
             };
             std::process::exit(code);
+        }
+        Some("check") => {
+            std::process::exit(cli::run_check(&args[2..]));
+        }
+        Some("format") => {
+            std::process::exit(cli::run_format(&args[2..]));
         }
         Some("version" | "--version") => {
             println!("lavray-core {}", env!("CARGO_PKG_VERSION"));
