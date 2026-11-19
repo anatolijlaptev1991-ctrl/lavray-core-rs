@@ -14,7 +14,7 @@ repository.workspace = true
 authors.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
-libc = "0.2"
+tun = { package = "tun", version = "0.6", default-features = false, features = ["async"] }
 
 [dependencies]
 tokio = { workspace = true }
