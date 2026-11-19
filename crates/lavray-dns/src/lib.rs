@@ -5,11 +5,13 @@
 
 pub mod cidr;
 pub mod doh_client;
+pub mod dot_client;
 pub mod fakeip;
 pub mod message;
 pub mod transport;
 pub mod wire;
 
+pub use dot_client::exchange_dot;
 pub use fakeip::FakeIpPool;
 pub use message::{
     FLAG_QR, FLAG_RA, FLAG_RD, Header, Message, ParseError, Question, RCODE_NOERROR,

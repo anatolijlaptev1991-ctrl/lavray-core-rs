@@ -11,6 +11,7 @@
 pub mod addr;
 pub mod direct;
 pub mod http_connect;
+pub mod reality;
 pub mod relay;
 pub mod server;
 pub mod sniff;

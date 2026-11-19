@@ -122,9 +122,17 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
       сжатие-указатели), UDP-транспорт, DoH (rustls + HTTP/1.1, chunked),
       FakeIP-пул (детерминированный, wrap-on-exhaust); живые e2e
       (Cloudflare UDP + Google DoH — 2/2, #[ignore] в CI); 13 тестов.
-- [ ] 7f-3c-2: TUN (порт netstack); REALITY (TLS1.3 ClientHello-
-      мимикрия); QUIC: hysteria2, tuic (quinn); DoT; CLI-кейсы cobra
-      (version/help/unknown) — байт-паритет.
+- [x] 7f-3c-2: REALITY-клиент — СВОЙ TLS 1.3 стек (reality/: kdf.rs
+      key schedule — RFC 8448 векторы handshake+ap сходятся; hello.rs
+      chrome-подобный ClientHello с корректными длинами; record.rs
+      AES-128-GCM + inner-content; handshake.rs — фрейминг handshake-
+      сообщений с coalescing; verify.rs — ed25519-лист + HMAC-SHA512;
+      stream.rs — app-канал AsyncRead/Write с owned-future чтением).
+      Живые e2e: openssl s_server + www.google.com — HTTP 200 через
+      шифрованный канал (RealityStream). DoT (RFC 7858) в lavray-dns —
+      живой e2e dns.quad9.net. 443 теста.
+- [ ] 7f-3c-3: TUN (порт netstack); QUIC: hysteria2, tuic (quinn);
+      CLI-кейсы cobra (version/help/unknown) — байт-паритет.
 - [x] 7g (MVP): бинарь `lavray-core serve` (паритет запуска Go) + API-интеграция.
 - [ ] gateway (OpenWrt tproxy/nftables), updates, MCP.
 - [ ] Сквозные тесты с реальным движком (в т.ч. против эталонных серверов).
