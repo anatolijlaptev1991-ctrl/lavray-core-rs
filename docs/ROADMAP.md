@@ -151,10 +151,12 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
 - [x] QUIC-UDP волна (0d158c2): udp_pipe — UdpPipe (VLESS stream-UDP
       len16 / hysteria2 datagrams udpMessage / tuic CommandPacket),
       udp_tproxy NAT на каналах движка; LIVE DNS hy2+tuic 2/2 (1.1.1.1:53). Полевой тест на роутере — остаётся.
-- [~] updates (7a5f058): `lavray-core updates check` — GitHub Releases
-      latest vs текущая версия (semver, JSON/человек-вывод); на репо нет
-      релизов — создать первый `gh release create v0.9.4` включит механику.
-      MCP — остаток.
+- [x] updates (7a5f058): `lavray-core updates check` — GitHub Releases
+      latest vs текущая версия; релиз v0.9.4 создан (live: «0.9.3 →
+      v0.9.4» подтверждён).
+- [x] MCP (66fb88b): `lavray-core mcp` — JSON-RPC over stdio
+      (initialize/ping/tools), инструменты profiles_list/profile_get/
+      version/updates_check против store; unit 5 + live smoke.
 - [x] wintun-валидация под админом ВЫПОЛНЕНА (UAC-запуск 20.11):
       tun_wintun_open_and_io ok — адаптер LAVRayTest создан, IO работает.
 - [x] Полный async relay в tun_proxy (aa3bdbf/dc6d134): gvisor-модель
