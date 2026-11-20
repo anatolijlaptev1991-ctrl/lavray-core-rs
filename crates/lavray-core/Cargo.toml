@@ -14,6 +14,7 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
+serde_json = { workspace = true }
 lavray-api = { path = "../lavray-api" }
 lavray-engine = { path = "../lavray-engine" }
 lavray-proto = { path = "../lavray-proto" }

@@ -9,6 +9,8 @@
 mod cli;
 mod cli_help;
 mod listener;
+mod mcp;
+mod mcp_tools;
 mod outbound_select;
 mod ruleset;
 mod serve;
@@ -40,6 +42,9 @@ fn main() {
                 }
             };
             std::process::exit(code);
+        }
+        Some("mcp") => {
+            std::process::exit(mcp::run(&args[2..]));
         }
         Some("updates") => {
             std::process::exit(updates::run_check(&args[3..]));
