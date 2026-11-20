@@ -18,7 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CASES = ROOT / "rust" / "app-cases"
-SUPPORTED = ("check", "format", "rule-set")
+SUPPORTED = ("check", "format", "rule-set", "version", "help", "no-such-command")
 
 
 def main() -> int:

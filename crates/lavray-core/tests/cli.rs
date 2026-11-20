@@ -151,7 +151,12 @@ async fn serve_startup_with_agent_token() {
 fn version_subcommand() {
     let out = Command::new(bin()).arg("version").output().unwrap();
     assert!(out.status.success());
-    assert!(String::from_utf8_lossy(&out.stdout).starts_with("lavray-core "));
+    // CLI-паритет с Go-эталоном (recorded version): бинарь печатает
+    // sing-box-совместимую версию (7f-3c-4c)
+    assert!(
+        String::from_utf8_lossy(&out.stdout).contains("sing-box version"),
+        "version должен быть sing-box-паритетным"
+    );
 }
 
 #[test]

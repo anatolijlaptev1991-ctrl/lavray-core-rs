@@ -45,15 +45,16 @@ fn main() {
             std::process::exit(cli::run_format(&args[2..]));
         }
         Some("version" | "--version") => {
-            println!("lavray-core {}", env!("CARGO_PKG_VERSION"));
+            // CLI-паритет: версия печатается как у Go-эталона (recorded)
+            println!("{}", cli_help::VERSION_OUTPUT);
         }
-        _ => {
-            eprintln!(
-                "использование: lavray-core serve --listen-socket <unix://…|127.0.0.1:0> [--data <dir>]\n\
-                 \x20              lavray-core rule-set match <path> <домен|IP> [-f source]\n\
-                 \x20              lavray-core version"
-            );
-            std::process::exit(2);
+        Some("help" | "--help") | None => {
+            println!("{}", cli_help::ROOT_HELP);
+        }
+        Some(other) => {
+            // unknown command: cobra Error + подсказка + FATAL, exit 1
+            cli_help::unknown_command(other, cli::FATAL);
+            std::process::exit(1);
         }
     }
 }
