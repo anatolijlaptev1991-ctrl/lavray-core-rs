@@ -21,6 +21,7 @@ pub mod netstack_phy;
 pub mod profile_outbound;
 pub mod reality;
 pub mod relay;
+pub mod relay_netstack;
 pub mod server;
 pub mod sniff;
 pub mod socks5;
