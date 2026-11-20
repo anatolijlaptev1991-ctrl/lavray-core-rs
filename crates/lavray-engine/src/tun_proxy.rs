@@ -38,8 +38,8 @@ impl std::error::Error for ProxyError {}
 pub fn check_profile(p: &lavray_model::profile::Profile) -> Result<VlessOutbound, ProxyError> {
     match from_profile(p) {
         Ok(ProfileOutbound::Vless(v)) => Ok(v),
-        Ok(ProfileOutbound::Unsupported(t)) => Err(ProxyError(format!(
-            "протокол {t} ещё не подключён к движку"
+        Ok(other) => Err(ProxyError(format!(
+            "протокол ещё не подключён к tun_proxy poll-циклу: {other:?}"
         ))),
         Err(e) => Err(ProxyError(e.to_string())),
     }

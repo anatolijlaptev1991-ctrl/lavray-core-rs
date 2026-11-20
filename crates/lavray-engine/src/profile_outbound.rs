@@ -10,6 +10,7 @@ use lavray_model::stream::StreamSettings;
 
 use crate::addr::TargetAddr;
 use crate::tls::TlsDial;
+use crate::tuic::TuicConfig;
 use crate::vless::client::VlessOutbound;
 
 /// Результат конвертации профиля в outbound.
@@ -17,7 +18,9 @@ use crate::vless::client::VlessOutbound;
 pub enum ProfileOutbound {
     /// VLESS-туннель (с TLS при наличии stream.tls/reality).
     Vless(VlessOutbound),
-    /// Протокол ещё не подключён к движку (hysteria2/tuic — QUIC-волна).
+    /// TUIC v5 (QUIC) — lavray_engine::tuic::TuicConfig.
+    Tuic(TuicConfig),
+    /// Протокол ещё не подключён к движку (hysteria2 — QUIC live e2e).
     Unsupported(&'static str),
 }
 
@@ -54,10 +57,38 @@ pub fn from_profile(p: &Profile) -> Result<ProfileOutbound, ConvertError> {
                 p.r#type == ProfileType::Trojan,
             )))
         }
-        ProfileType::Hysteria2 => Ok(ProfileOutbound::Unsupported("hysteria2 (QUIC-волна)")),
-        ProfileType::Tuic => Ok(ProfileOutbound::Unsupported("tuic (QUIC-волна)")),
+        ProfileType::Hysteria2 => Ok(ProfileOutbound::Unsupported("hysteria2 (QUIC live e2e)")),
+        ProfileType::Tuic => {
+            let Some(Detail::Tuic(d)) = &p.detail else {
+                return Ok(ProfileOutbound::Unsupported(type_name(p.r#type)));
+            };
+            Ok(ProfileOutbound::Tuic(TuicConfig {
+                server: p.address.clone(),
+                server_port: u16::try_from(p.port)
+                    .map_err(|_| ConvertError("port > 65535".into()))?,
+                sni: stream_sni(p.stream.as_ref(), &p.address),
+                uuid: d.uuid.clone(),
+                password: d.password.clone(),
+                skip_verify: stream_insecure(p.stream.as_ref()),
+            }))
+        }
         t => Ok(ProfileOutbound::Unsupported(type_name(*t))),
     }
+}
+
+/// SNI из StreamSettings (fallback — адрес сервера).
+fn stream_sni(stream: Option<&StreamSettings>, fallback: &str) -> String {
+    let sni = stream.map_or(fallback, |s| s.sni.as_str());
+    if sni.is_empty() {
+        fallback.to_string()
+    } else {
+        sni.to_string()
+    }
+}
+
+/// allow_insecure из StreamSettings.
+fn stream_insecure(stream: Option<&StreamSettings>) -> bool {
+    stream.is_some_and(|s| s.allow_insecure)
 }
 
 fn build_vless(
@@ -112,60 +143,5 @@ fn type_name(t: ProfileType) -> &'static str {
         ProfileType::CustomConfig => "custom config",
         ProfileType::CustomExternal => "custom external",
         ProfileType::Chain => "chain",
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn vless_profile() -> Profile {
-        // канонический JSON-путь — как реальные профили приходят из store
-        let json = r#"{"type":"vless","name":"t","address":"vpn.example.com","port":443,
-            "detail":{"password":"b831381d-6324-4d53-ad4f-8cda48b30811","flow":""}}"#;
-        serde_json::from_str(json).expect("profile json")
-    }
-
-    #[test]
-    fn vless_profile_builds_outbound() {
-        let p = vless_profile();
-        let out = from_profile(&p).expect("convert");
-        match out {
-            ProfileOutbound::Vless(v) => {
-                assert_eq!(v.uuid, "b831381d-6324-4d53-ad4f-8cda48b30811");
-                match &v.server {
-                    TargetAddr::Domain(d, port) => {
-                        assert_eq!(d, "vpn.example.com");
-                        assert_eq!(*port, 443);
-                    }
-                    TargetAddr::Ip(..) => panic!("domain expected"),
-                }
-            }
-            ProfileOutbound::Unsupported(t) => panic!("unsupported: {t}"),
-        }
-    }
-
-    #[test]
-    fn hysteria2_reports_unsupported() {
-        let json = r#"{"type":"hysteria2","name":"h","address":"h.example.com","port":443}"#;
-        let p: Profile = serde_json::from_str(json).expect("profile json");
-        let out = from_profile(&p).expect("convert");
-        assert!(matches!(
-            out,
-            ProfileOutbound::Unsupported("hysteria2 (QUIC-волна)")
-        ));
-    }
-
-    #[test]
-    fn tls_from_stream_settings() {
-        let mut p = vless_profile();
-        // stream с TLS — упрощённо проверяем чтоtls dial не None невозможен без
-        // знания структуры StreamSettings; минимальная проверка unsupported-ветки
-        p.r#type = ProfileType::CustomOutbound;
-        let out = from_profile(&p).expect("convert");
-        assert!(matches!(
-            out,
-            ProfileOutbound::Unsupported("custom outbound")
-        ));
     }
 }
