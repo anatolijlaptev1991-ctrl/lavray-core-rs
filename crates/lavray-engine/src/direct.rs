@@ -8,9 +8,11 @@ use std::time::Duration;
 use tokio::net::TcpStream;
 
 use crate::addr::TargetAddr;
+use crate::hy2::Hy2Config;
 use crate::relay::{UpRead, UpWrite};
 use crate::ss::client::{self, SsOutbound};
 use crate::trojan::{self, TrojanOutbound};
+use crate::tuic::TuicConfig;
 use crate::vless::{self, VlessOutbound};
 use crate::vmess::{self, VmessOutbound};
 use crate::ws::WsDial;
@@ -42,6 +44,10 @@ pub enum Outbound {
     Vmess(Box<VmessOutbound>),
     /// VLESS v0 (волна 7d), TLS или plain.
     Vless(Box<VlessOutbound>),
+    /// Hysteria2 (QUIC, волна QUIC live e2e).
+    Hy2(Hy2Config),
+    /// TUIC v5 (QUIC).
+    Tuic(TuicConfig),
 }
 
 impl Outbound {
@@ -60,6 +66,22 @@ impl Outbound {
             Self::Trojan(o) => trojan::client::connect(o, target).await,
             Self::Vmess(o) => vmess::client::connect(o, target).await,
             Self::Vless(o) => vless::client::connect(o, target).await,
+            Self::Hy2(cfg) => {
+                let host = target.host_string();
+                let s = crate::hy2_conn::connect_with_payload(cfg, &host, target.port(), &[])
+                    .await
+                    .map_err(std::io::Error::other)?;
+                Ok(s.split())
+            }
+            Self::Tuic(cfg) => {
+                let server = crate::hy2_conn::resolve_server(&cfg.server, cfg.server_port)
+                    .await
+                    .map_err(std::io::Error::other)?;
+                let s = crate::tuic_conn::connect(cfg, target, server)
+                    .await
+                    .map_err(std::io::Error::other)?;
+                Ok(s.split())
+            }
         }
     }
 }

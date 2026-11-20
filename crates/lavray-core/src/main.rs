@@ -9,6 +9,7 @@
 mod cli;
 mod cli_help;
 mod listener;
+mod outbound_select;
 mod ruleset;
 mod serve;
 

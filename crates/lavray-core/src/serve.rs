@@ -8,6 +8,8 @@
 
 use std::sync::Arc;
 
+use crate::outbound_select::{active_outbound, name as outbound_name};
+
 use lavray_proto::v1::profile_service_server::ProfileServiceServer;
 use lavray_proto::v1::routing_service_server::RoutingServiceServer;
 use lavray_proto::v1::settings_service_server::SettingsServiceServer;
@@ -91,10 +93,15 @@ async fn serve(listen: String, data: String) -> i32 {
 
     // Mixed-инбаунд из настроек; отказ (порт занят) — фатально, как Go.
     let (bind_addr, bind_port) = mixed_bind(&store);
+    let outbound = active_outbound(&store);
+    eprintln!(
+        "lavray-core: mixed-inbound {bind_addr}:{bind_port}, outbound: {}",
+        outbound_name(&outbound)
+    );
     let inbound = match lavray_engine::start(lavray_engine::MixedConfig {
         listen: format!("{bind_addr}:{bind_port}"),
         socks_auth: None,
-        outbound: lavray_engine::Outbound::Direct,
+        outbound,
     })
     .await
     {
