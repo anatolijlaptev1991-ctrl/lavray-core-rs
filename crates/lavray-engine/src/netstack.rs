@@ -11,7 +11,7 @@ use std::collections::VecDeque;
 use std::net::IpAddr;
 use std::sync::{Arc, Mutex};
 
-use crate::netstack_flow::TcpFlow;
+use crate::netstack_flow::{ListenAddr, catch_syn_packet};
 use crate::netstack_phy::{RxToken, TxToken};
 use crate::netstack_types::{AcceptedTcp, NetstackError, TunIo};
 use smoltcp::iface::{Config as IfaceConfig, Interface, SocketSet};
@@ -79,8 +79,8 @@ pub struct Netstack {
     cfg: NetstackConfig,
     /// Принятые TCP-соединения (данные через smoltcp-сокеты).
     accepted: VecDeque<AcceptedTcp>,
-    /// Слушающие сокеты: (handle, порт).
-    listeners: Vec<(smoltcp::iface::SocketHandle, u16)>,
+    /// Слушающие сокеты: (handle, адрес:порт).
+    listeners: Vec<(smoltcp::iface::SocketHandle, ListenAddr)>,
 }
 
 impl Netstack {
@@ -127,9 +127,18 @@ impl Netstack {
         );
     }
 
-    /// Установленные соединения на слушающих портах.
-    pub fn accept_established(&mut self) -> Vec<(u16, smoltcp::iface::SocketHandle)> {
+    /// Установленные соединения: (dst ip, dst port, handle) — цель для
+    /// outbound (модель gvisor: слушатель создан под конкретный dst).
+    pub fn accept_established(&mut self) -> Vec<(IpAddr, u16, smoltcp::iface::SocketHandle)> {
         crate::netstack_flow::accept_established(&mut self.sockets, &mut self.listeners)
+    }
+
+    /// Установленные соединения с готовой целью (TargetAddr из dst).
+    pub fn accept_targets(&mut self) -> Vec<(crate::TargetAddr, smoltcp::iface::SocketHandle)> {
+        crate::netstack_flow::accept_established(&mut self.sockets, &mut self.listeners)
+            .into_iter()
+            .map(|(ip, port, h)| (crate::TargetAddr::Ip(ip, port), h))
+            .collect()
     }
 
     /// Изменяемый доступ к сокету по handle (для relay).
@@ -140,10 +149,11 @@ impl Netstack {
         self.sockets.get_mut::<tcp::Socket>(handle)
     }
 
-    pub fn poll(&mut self) -> Result<Vec<TcpFlow>, NetstackError> {
-        let flows = Vec::new();
-        // 1. Пакеты из TUN → rx-очередь netstack
+    pub fn poll(&mut self) -> Result<(), NetstackError> {
+        // 1. Пакеты из TUN → SYN-перехват (gvisor-модель: слушатель под
+        //    конкретный dst ДО smoltcp poll) → rx-очередь
         while let Ok(pkt) = self.tun.read_packet() {
+            catch_syn_packet(&mut self.sockets, &mut self.listeners, &pkt);
             if let Ok(mut q) = self.device_adapter.rx_queue.lock() {
                 q.push_back(pkt);
             }
@@ -164,8 +174,7 @@ impl Netstack {
                 .write_packet(&pkt)
                 .map_err(|e| NetstackError(format!("tun write: {e}")))?;
         }
-        // 4. Разбор новых TCP-соединений (SYN/ESTABLISHED через smoltcp listening sockets — 7f-3c-4c)
-        Ok(flows)
+        Ok(())
     }
 }
 

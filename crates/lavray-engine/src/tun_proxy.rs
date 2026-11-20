@@ -1,12 +1,9 @@
-// SPDX-License-Identifier: GPL-3.0-only
-//! Poll-цикл движка поверх TUN+netstack (волна 7f-3c-4b-интеграция):
-//! accept_established → на каждое соединение upstream-задача через
-//! универсальный outbound-мост (VLESS / Hysteria2 / TUIC —
-//! tun_outbound::Outbound) + копирование smoltcp-сокета ↔ upstream.
-use crate::addr::TargetAddr;
 use crate::netstack::{Netstack, NetstackConfig};
+use crate::netstack_types::NetstackError;
 use crate::profile_outbound::{ProfileOutbound, from_profile};
 use crate::tun_outbound::Outbound;
+use crate::tun_relay::{FlowState, ToClient, spawn_upstream};
+use std::collections::HashMap;
 use std::net::IpAddr;
 use std::sync::Arc;
 use std::time::Duration;
@@ -50,8 +47,16 @@ pub fn check_profile(p: &lavray_model::profile::Profile) -> Result<Outbound, Pro
     }
 }
 
-/// Запустить poll-цикл: TUN + netstack + задачи проксирования.
-/// Функция блокирует до остановки (через shutdown-токен).
+/// Активное соединение poll-цикла.
+struct Flow {
+    state: FlowState,
+    /// Sender жив? (None = закрыт: клиент закрылся, задача завершится)
+    sender_alive: bool,
+}
+
+/// Запустить poll-цикл: TUN + netstack + канальный relay. Полный
+/// двунаправленный поток: данные клиента → upstream-задаче, ответы —
+/// обратно через каналы; цикл никогда не ждёт EOF.
 ///
 /// # Errors
 /// I/O / netstack.
@@ -66,59 +71,103 @@ pub async fn run(
         mtu: 1500,
     };
     let mut netstack = Netstack::new(ns_cfg, tun).map_err(|e| ProxyError(e.to_string()))?;
-    netstack.listen_port(cfg.listen_port, 65535, 65535);
     let outbound = Arc::new(cfg.outbound);
-    let mut established: Vec<(u16, smoltcp::iface::SocketHandle)> = Vec::new();
+    let mut flows: HashMap<smoltcp::iface::SocketHandle, Flow> = HashMap::new();
+    let mut buf = [0u8; 4096];
     loop {
         if *shutdown.borrow() {
             return Ok(());
         }
-        // 1. smoltcp poll (пакеты из TUN обрабатываются в netstack)
-        let flows = netstack.poll().map_err(|e| ProxyError(e.to_string()))?;
-        // 2. Новые установленные соединения → задачи проксирования
-        let new_conns = netstack.accept_established();
-        let _ = flows;
-        established.extend(new_conns);
-        // 3. Данные установленных соединений перекачиваем в outbound
-        for (_port, handle) in &established {
+        if let Err(e) = netstack.poll() {
+            return Err(ProxyError(e.0));
+        }
+        // 1. Новые установленные соединения → upstream-задачи
+        for (target, handle) in netstack.accept_targets() {
+            let state = spawn_upstream(Arc::clone(&outbound), target);
+            flows.insert(
+                handle,
+                Flow {
+                    state,
+                    sender_alive: true,
+                },
+            );
+        }
+        // 2. Данные клиента → upstream-задачам; закрытие клиентов
+        let mut to_remove = Vec::new();
+        for (handle, flow) in &mut flows {
             let sock = netstack.socket_mut(*handle);
-            let mut buf = [0u8; 4096];
-            if sock.can_recv() {
-                let n = sock
-                    .recv_slice(&mut buf)
-                    .map_err(|e| ProxyError(format!("recv: {e}")))?;
-                if n > 0 {
-                    let v = Arc::clone(&outbound);
-                    let data = buf[..n].to_vec();
-                    let target = TargetAddr::Domain("proxy-target.invalid".into(), 80);
-                    let mut up = v
-                        .connect(&target)
-                        .await
-                        .map_err(|e| ProxyError(format!("outbound: {e}")))?;
-                    up.write_all(&data)
-                        .await
-                        .map_err(|e| ProxyError(format!("outbound write: {e}")))?;
-                    up.flush()
-                        .await
-                        .map_err(|e| ProxyError(format!("outbound flush: {e}")))?;
-                    let mut resp = Vec::new();
-                    let mut chunk = [0u8; 4096];
-                    loop {
-                        let n = up
-                            .read(&mut chunk)
-                            .await
-                            .map_err(|e| ProxyError(format!("outbound read: {e}")))?;
-                        if n == 0 {
+            let client_fin = !sock.can_recv();
+            let dead = !sock.is_active();
+            if !flow.sender_alive && (client_fin || dead) {
+                flow.sender_alive = false;
+            }
+            if flow.sender_alive && sock.can_recv() {
+                match sock.recv_slice(&mut buf) {
+                    Ok(0) | Err(_) => flow.sender_alive = false,
+                    Ok(n) => {
+                        let _ = flow.state.to_up.send(buf[..n].to_vec());
+                    }
+                }
+            }
+            if flow.sender_alive && (dead || client_fin) {
+                flow.sender_alive = false;
+            }
+            if !flow.sender_alive {
+                to_remove.push(*handle);
+            }
+        }
+        for h in to_remove {
+            flows.remove(&h);
+        }
+        // 3. Ответы upstream → клиентам
+        let mut drain = Vec::new();
+        for (handle, flow) in &mut flows {
+            let sock = netstack.socket_mut(*handle);
+            let mut tmp: Vec<Vec<u8>> = Vec::new();
+            let mut dead = false;
+            while let Ok(msg) = flow.state.from_up.try_recv() {
+                match msg {
+                    ToClient::Data(d) => tmp.push(d),
+                    ToClient::Eof => {
+                        sock.close();
+                        dead = true;
+                    }
+                }
+            }
+            if dead {
+                drain.push(*handle);
+                continue;
+            }
+            for d in tmp {
+                let mut off = 0;
+                while off < d.len() {
+                    match sock.send_slice(&d[off..]) {
+                        Ok(n) if n > 0 => off += n,
+                        Ok(_) => break, // send-буфер полон — дотомкнем позже
+                        Err(_) => {
+                            flow.sender_alive = false;
                             break;
                         }
-                        resp.extend_from_slice(&chunk[..n]);
                     }
-                    let _ = sock.send_slice(&resp);
+                }
+                if !flow.sender_alive {
+                    break;
                 }
             }
         }
-        // 4. Пауза между итерациями (yield)
+        for h in drain {
+            if let Some(f) = flows.get_mut(&h) {
+                f.sender_alive = false;
+            }
+        }
         tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+}
+
+/// Обёртка NetstackError для ProxyError (строка внутри).
+impl From<NetstackError> for ProxyError {
+    fn from(e: NetstackError) -> Self {
+        Self(e.0)
     }
 }
 

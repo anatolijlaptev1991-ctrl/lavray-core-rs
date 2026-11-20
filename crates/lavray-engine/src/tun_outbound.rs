@@ -15,7 +15,7 @@ use crate::tuic::TuicConfig;
 use crate::tuic_conn::{TuicStream, connect as tuic_connect};
 use crate::vless::client::{VlessOutbound, connect as vless_connect};
 use std::net::SocketAddr;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use std::pin::Pin;
 
 /// Исходящий протокол poll-цикла.
 #[derive(Debug, Clone)]
@@ -66,43 +66,55 @@ impl Outbound {
     }
 }
 
+impl tokio::io::AsyncRead for Upstream {
+    fn poll_read(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+        dst: &mut tokio::io::ReadBuf<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        match &mut *self {
+            Self::Split(r, _) => tokio::io::AsyncRead::poll_read(Pin::new(r), cx, dst),
+            Self::Hy2(s) => tokio::io::AsyncRead::poll_read(Pin::new(s), cx, dst),
+            Self::Tuic(s) => tokio::io::AsyncRead::poll_read(Pin::new(s), cx, dst),
+        }
+    }
+}
+
+impl tokio::io::AsyncWrite for Upstream {
+    fn poll_write(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+        buf: &[u8],
+    ) -> std::task::Poll<std::io::Result<usize>> {
+        match &mut *self {
+            Self::Split(_, w) => tokio::io::AsyncWrite::poll_write(Pin::new(w), cx, buf),
+            Self::Hy2(s) => tokio::io::AsyncWrite::poll_write(Pin::new(s), cx, buf),
+            Self::Tuic(s) => tokio::io::AsyncWrite::poll_write(Pin::new(s), cx, buf),
+        }
+    }
+    fn poll_flush(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        match &mut *self {
+            Self::Split(_, w) => tokio::io::AsyncWrite::poll_flush(Pin::new(w), cx),
+            Self::Hy2(s) => tokio::io::AsyncWrite::poll_flush(Pin::new(s), cx),
+            Self::Tuic(s) => tokio::io::AsyncWrite::poll_flush(Pin::new(s), cx),
+        }
+    }
+    fn poll_shutdown(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<std::io::Result<()>> {
+        match &mut *self {
+            Self::Split(_, w) => tokio::io::AsyncWrite::poll_shutdown(Pin::new(w), cx),
+            Self::Hy2(s) => tokio::io::AsyncWrite::poll_shutdown(Pin::new(s), cx),
+            Self::Tuic(s) => tokio::io::AsyncWrite::poll_shutdown(Pin::new(s), cx),
+        }
+    }
+}
+
 impl Upstream {
-    /// Читать данные из upstream.
-    ///
-    /// # Errors
-    /// I/O.
-    pub async fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        match self {
-            Self::Split(r, _) => r.read(buf).await,
-            Self::Hy2(s) => s.read(buf).await,
-            Self::Tuic(s) => s.read(buf).await,
-        }
-    }
-
-    /// Записать данные в upstream.
-    ///
-    /// # Errors
-    /// I/O.
-    pub async fn write_all(&mut self, buf: &[u8]) -> std::io::Result<()> {
-        match self {
-            Self::Split(_, w) => w.write_all(buf).await,
-            Self::Hy2(s) => s.write_all(buf).await,
-            Self::Tuic(s) => s.write_all(buf).await,
-        }
-    }
-
-    /// Сбросить буферы (для QUIC-стримов flush обязателен).
-    ///
-    /// # Errors
-    /// I/O.
-    pub async fn flush(&mut self) -> std::io::Result<()> {
-        match self {
-            Self::Split(_, w) => w.flush().await,
-            Self::Hy2(s) => s.flush().await,
-            Self::Tuic(s) => s.flush().await,
-        }
-    }
-
     /// Разделить на owned-половины (для tokio::io::copy в двух задачах).
     #[must_use]
     pub fn into_split(self) -> (UpRead, UpWrite) {

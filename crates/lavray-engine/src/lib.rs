@@ -39,6 +39,7 @@ pub mod tun;
 pub mod tun_device;
 pub mod tun_outbound;
 pub mod tun_proxy;
+pub mod tun_relay;
 pub mod vless;
 pub mod vmess;
 pub mod ws;
