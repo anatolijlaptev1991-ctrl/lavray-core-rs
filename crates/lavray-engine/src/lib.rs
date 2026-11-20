@@ -24,6 +24,8 @@ pub mod socks5;
 pub mod ss;
 pub mod tls;
 pub mod trojan;
+pub mod tuic;
+pub mod tuic_conn;
 pub mod tun;
 pub mod tun_device;
 pub mod vless;
