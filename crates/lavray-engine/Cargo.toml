@@ -16,6 +16,11 @@ authors.workspace = true
 [target.'cfg(target_os = "linux")'.dependencies]
 tun = { package = "tun", version = "0.6", default-features = false, features = ["async"] }
 
+[target.'cfg(target_os = "windows")'.dependencies]
+# wintun-платформа tun-rs: создание адаптера требует wintun.dll рядом
+# с исполняемым файлом (или в PATH) и прав администратора.
+tun = { package = "tun", version = "0.6", default-features = false }
+
 [dependencies]
 lavray-model = { path = "../lavray-model" }
 tokio = { workspace = true }

@@ -11,3 +11,4 @@ etalon/live/*.log
 etalon/live/qlog/
 etalon/live/qlog_rep/
 etalon/goclient/
+wintun.dll
