@@ -3,7 +3,7 @@
 //! Живой тест UDP tproxy NAT (Linux, loopback, без привилегий).
 #![cfg(target_os = "linux")]
 
-use lavray_engine::udp_tproxy::{Nat, nat_get_or_create, upstream_socket};
+use lavray_engine::udp_tproxy::{Nat, nat_get_or_create};
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -19,11 +19,8 @@ async fn nat_entry_roundtrip() {
         .expect("target");
     let taddr = target.local_addr().expect("taddr");
 
-    // entry-сокет: bind orig_dst (loopback эфемерный)
+    // NAT-запись через публичный путь (transparent=false — без привилегий)
     let orig_dst: SocketAddr = "127.0.0.1:0".parse().expect("parse");
-    let sock = Arc::new(upstream_socket(&orig_dst, false).expect("upstream"));
-    let eaddr = sock.local_addr().expect("eaddr");
-
     let nat: Nat = Arc::new(Mutex::new(HashMap::new()));
     let client: SocketAddr = "127.0.0.1:0".parse().expect("parse");
     let reply_sock = Arc::new(
@@ -31,10 +28,11 @@ async fn nat_entry_roundtrip() {
             .await
             .expect("reply"),
     );
-    // NAT-запись через публичный путь (transparent=false — без привилегий)
-    let _ = nat_get_or_create(&nat, client, eaddr, Arc::clone(&reply_sock), false)
+    let entry_sock = nat_get_or_create(&nat, client, orig_dst, Arc::clone(&reply_sock), false)
         .await
         .expect("nat entry");
+    let eaddr = entry_sock.local_addr().expect("eaddr");
+    let sock = entry_sock;
 
     // клиентские данные → цель
     let table = nat.lock().await;
