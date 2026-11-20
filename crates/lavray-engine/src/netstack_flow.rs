@@ -114,8 +114,6 @@ pub(crate) fn sock_listen(sockets: &mut SocketSet<'static>, handle: SocketHandle
     let _ = sock.listen(ep);
 }
 
-
-
 /// SYN-перехват из сырого пакета: TCP SYN (без ACK) → свободный слушатель
 /// на dst:port (gvisor-модель; чужой dst не обязан быть адресом iface).
 pub(crate) fn catch_syn_packet(
@@ -134,9 +132,7 @@ pub(crate) fn catch_syn_packet(
         return;
     };
     if let crate::tun::L4Flow::Tcp {
-        dst_port,
-        flags,
-        ..
+        dst_port, flags, ..
     } = l4
         && flags & TCP_SYN == TCP_SYN
         && flags & TCP_ACK == 0
