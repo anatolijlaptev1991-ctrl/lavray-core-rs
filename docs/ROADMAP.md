@@ -131,11 +131,25 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
       Живые e2e: openssl s_server + www.google.com — HTTP 200 через
       шифрованный канал (RealityStream). DoT (RFC 7858) в lavray-dns —
       живой e2e dns.quad9.net. 443 теста.
-- [ ] 7f-3c-3: TUN (порт netstack); QUIC: hysteria2, tuic (quinn);
-      CLI-кейсы cobra (version/help/unknown) — байт-паритет.
+- [x] 7f-3c-3/4: TUN-ядро + netstack (smoltcp) + tun_proxy poll-цикл
+      (tun_outbound мост: Vless/Hy2/Tuic; hy2/tuic LIVE e2e 2/2 против
+      sing-box-etalon — etalon/live/); wintun.dll-платформа (tun-rs
+      windows) + TunIo-адаптер; wintun-тест требует elevated
+      (tun_wintun_open_and_io --ignored) + wintun.dll (см. etalon/live
+      README и .gitignore).
 - [x] 7g (MVP): бинарь `lavray-core serve` (паритет запуска Go) + API-интеграция.
 - [ ] gateway (OpenWrt tproxy/nftables), updates, MCP.
-- [ ] Сквозные тесты с реальным движком (в т.ч. против эталонных серверов).
+- [ ] Полный async relay в tun_proxy (сейчас read-to-end на чанк данных);
+      ручная wintun-валидация под админом; hy2 DNS-резолв в profile-пути
+      уже через resolve_server.
+
+## TUN-integration волна (20.11, 894b5a4+cf0aacb)
+
+tun_outbound.rs — универсальный мост poll-цикла (Outbound enum → Upstream:
+Split для VLESS, combined для QUIC-стримов — их нельзя split'ить, не
+дропнув живые H3 uni-потоки). check_profile: VLESS/Hysteria2/TUIC.
+hy2_conn::resolve_server: IP fast-path + lookup_host. wintun: cfg(windows)
+TunDevice через tun-rs windows платформу + impl TunIo.
 
 ## Эталон recorded behavior (rust-anything, 19.11)
 
