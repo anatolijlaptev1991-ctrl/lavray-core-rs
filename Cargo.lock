@@ -1256,6 +1256,7 @@ dependencies = [
  "hkdf",
  "hmac",
  "lavray-model",
+ "lavray-sys",
  "md-5",
  "quinn",
  "rcgen",
@@ -1341,6 +1342,13 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "lavray-sys"
+version = "0.9.3"
+dependencies = [
+ "libc",
 ]
 
 [[package]]

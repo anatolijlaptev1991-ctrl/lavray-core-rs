@@ -15,6 +15,7 @@ authors.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
 tun = { package = "tun", version = "0.6", default-features = false, features = ["async"] }
+lavray-sys = { path = "../lavray-sys" }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 # wintun-платформа tun-rs: создание адаптера требует wintun.dll рядом

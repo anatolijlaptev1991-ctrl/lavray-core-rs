@@ -1,0 +1,23 @@
+[package]
+name = "lavray-sys"
+description = "LAVRay sys-обёртка: UDP tproxy recvmsg(IP_RECVORIGDSTADDR)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+# ВАЖНО: этот крейт НЕ наследует workspace-lints (unsafe_code = forbid).
+# Осознанное исключение владельца (§unsafe-policy): единственное место в
+# workspace с raw-recvmsg для UDP tproxy. Вся unsafe-логика изолирована
+# здесь; остальные крейты сохраняют политику forbid.
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2"
+
+# Явное исключение из workspace unsafe_code = "forbid" (единственное место
+# workspace; см. описание крейта). Собственная [lints] отключает
+# наследование workspace.lints — остальное не подключаем.
+[lints.rust]
+unsafe_code = "allow"
