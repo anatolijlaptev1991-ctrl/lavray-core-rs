@@ -13,46 +13,14 @@ use std::sync::{Arc, Mutex};
 
 use crate::netstack_flow::TcpFlow;
 use crate::netstack_phy::{RxToken, TxToken};
+use crate::netstack_types::{AcceptedTcp, NetstackError, TunIo};
 use smoltcp::iface::{Config as IfaceConfig, Interface, SocketSet};
 use smoltcp::phy::{Device, DeviceCapabilities, Medium};
 use smoltcp::socket::tcp;
 use smoltcp::time::Instant;
 use smoltcp::wire::{HardwareAddress, IpAddress, IpCidr, Ipv4Address};
 
-/// Ошибка netstack.
-#[derive(Debug)]
-pub struct NetstackError(pub String);
-
-impl std::fmt::Display for NetstackError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "netstack: {}", self.0)
-    }
-}
-
-impl std::error::Error for NetstackError {}
-
-/// Входящий TCP-флоу из TUN: (peer, порт назначения, приёмник данных).
-pub struct AcceptedTcp {
-    pub src: IpAddr,
-    pub dst: IpAddr,
-    pub dst_port: u16,
-    pub socket: tcp::Socket<'static>,
-}
-
 /// TUN-девайс для netstack: байтовый канал (замена wintun Read/Write).
-pub trait TunIo: Send {
-    /// Прочитать исходящий пакет (IP-фрейм) из TUN.
-    ///
-    /// # Errors
-    /// I/O.
-    fn read_packet(&mut self) -> Result<Vec<u8>, std::io::Error>;
-    /// Записать входящий пакет в TUN.
-    ///
-    /// # Errors
-    /// I/O.
-    fn write_packet(&mut self, pkt: &[u8]) -> Result<(), std::io::Error>;
-}
-
 /// Внутренний smoltcp-Device поверх TunIo (swap-канал).
 struct TunDeviceAdapter {
     rx_queue: Arc<Mutex<VecDeque<Vec<u8>>>>,
@@ -104,6 +72,7 @@ pub struct NetstackConfig {
 /// (wintun/wire интеграция); сейчас каркас.
 #[allow(dead_code)]
 pub struct Netstack {
+    tun: Box<dyn TunIo>,
     iface: Interface,
     sockets: SocketSet<'static>,
     device_adapter: TunDeviceAdapter,
@@ -119,7 +88,7 @@ impl Netstack {
     ///
     /// # Errors
     /// Некорректный адрес.
-    pub fn new(cfg: NetstackConfig, _tun: Box<dyn TunIo>) -> Result<Self, NetstackError> {
+    pub fn new(cfg: NetstackConfig, tun: Box<dyn TunIo>) -> Result<Self, NetstackError> {
         let iface_cfg = IfaceConfig::new(HardwareAddress::Ip);
         let adapter = TunDeviceAdapter {
             rx_queue: Arc::new(Mutex::new(VecDeque::new())),
@@ -135,6 +104,7 @@ impl Netstack {
         });
         // listen-порт только через tcp sockets — движок добавляет их сам
         Ok(Self {
+            tun,
             iface,
             sockets: SocketSet::new(Vec::new()),
             device_adapter: adapter,
@@ -162,10 +132,18 @@ impl Netstack {
         crate::netstack_flow::accept_established(&mut self.sockets, &mut self.listeners)
     }
 
-    pub fn poll(&mut self, tun: &mut dyn TunIo) -> Result<Vec<TcpFlow>, NetstackError> {
+    /// Изменяемый доступ к сокету по handle (для relay).
+    pub fn socket_mut(
+        &mut self,
+        handle: smoltcp::iface::SocketHandle,
+    ) -> &mut smoltcp::socket::tcp::Socket<'static> {
+        self.sockets.get_mut::<tcp::Socket>(handle)
+    }
+
+    pub fn poll(&mut self) -> Result<Vec<TcpFlow>, NetstackError> {
         let flows = Vec::new();
         // 1. Пакеты из TUN → rx-очередь netstack
-        while let Ok(pkt) = tun.read_packet() {
+        while let Ok(pkt) = self.tun.read_packet() {
             if let Ok(mut q) = self.device_adapter.rx_queue.lock() {
                 q.push_back(pkt);
             }
@@ -182,7 +160,8 @@ impl Netstack {
             .ok()
             .and_then(|mut q| q.pop_front())
         {
-            tun.write_packet(&pkt)
+            self.tun
+                .write_packet(&pkt)
                 .map_err(|e| NetstackError(format!("tun write: {e}")))?;
         }
         // 4. Разбор новых TCP-соединений (SYN/ESTABLISHED через smoltcp listening sockets — 7f-3c-4c)
