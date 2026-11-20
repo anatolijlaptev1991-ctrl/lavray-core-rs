@@ -57,7 +57,7 @@ pub fn spawn_modes(
         };
         let rx = shutdown_rx.clone();
         tokio::spawn(async move {
-            if let Err(e) = lavray_engine::udp_tproxy::run(cfg, rx).await {
+            if let Err(e) = lavray_engine::udp_tproxy_run::run(cfg, rx).await {
                 eprintln!("lavray-core: gateway-udp: {e}");
             }
         });
