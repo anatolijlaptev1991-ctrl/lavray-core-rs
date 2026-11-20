@@ -138,7 +138,11 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
       (tun_wintun_open_and_io --ignored) + wintun.dll (см. etalon/live
       README и .gitignore).
 - [x] 7g (MVP): бинарь `lavray-core serve` (паритет запуска Go) + API-интеграция.
-- [ ] gateway (OpenWrt tproxy/nftables), updates, MCP.
+- [~] gateway (OpenWrt tproxy/nftables): redirect-inbound (TCP,
+      socket2 IP_TRANSPARENT + SO_ORIGINAL_DST) + nftables-генератор
+      (d9ee026) — готово; UDP tproxy (recvmsg gso/orig-dst) и
+      lavray-core serve-интеграция — остаток.
+- [ ] updates, MCP.
 - [ ] Полный async relay в tun_proxy (сейчас read-to-end на чанк данных);
       ручная wintun-валидация под админом; hy2 DNS-резолв в profile-пути
       уже через resolve_server.
