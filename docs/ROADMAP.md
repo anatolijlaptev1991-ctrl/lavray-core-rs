@@ -147,7 +147,10 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
       9efbd91) + UDP NAT inbound (udp_tproxy[_run].rs: bind(orig_dst),
       ответы «от цели», TTL-чистка); NAT roundtrip тест (Linux, loopback
       без привилегий) — зелёный; правила nftables: `meta l4proto udp
-      tproxy to :port mark 1`. Полевой тест на роутере — остаётся.
+      tproxy to :port mark 1`.
+- [x] QUIC-UDP волна (0d158c2): udp_pipe — UdpPipe (VLESS stream-UDP
+      len16 / hysteria2 datagrams udpMessage / tuic CommandPacket),
+      udp_tproxy NAT на каналах движка; LIVE DNS hy2+tuic 2/2 (1.1.1.1:53). Полевой тест на роутере — остаётся.
 - [ ] updates, MCP.
 - [x] Полный async relay в tun_proxy (aa3bdbf/dc6d134): gvisor-модель
       SYN-перехвата — слушатель под конкретный dst (цель из SYN, чужой
