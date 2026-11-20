@@ -9,6 +9,7 @@ use lavray_model::profile::{Profile, ProfileType};
 use lavray_model::stream::StreamSettings;
 
 use crate::addr::TargetAddr;
+use crate::hy2::Hy2Config;
 use crate::tls::TlsDial;
 use crate::tuic::TuicConfig;
 use crate::vless::client::VlessOutbound;
@@ -20,7 +21,9 @@ pub enum ProfileOutbound {
     Vless(VlessOutbound),
     /// TUIC v5 (QUIC) — lavray_engine::tuic::TuicConfig.
     Tuic(TuicConfig),
-    /// Протокол ещё не подключён к движку (hysteria2 — QUIC live e2e).
+    /// Hysteria2 (QUIC) — lavray_engine::hy2::Hy2Config.
+    Hysteria2(Hy2Config),
+    /// Протокол ещё не подключён к движку.
     Unsupported(&'static str),
 }
 
@@ -57,7 +60,23 @@ pub fn from_profile(p: &Profile) -> Result<ProfileOutbound, ConvertError> {
                 p.r#type == ProfileType::Trojan,
             )))
         }
-        ProfileType::Hysteria2 => Ok(ProfileOutbound::Unsupported("hysteria2 (QUIC live e2e)")),
+        ProfileType::Hysteria2 => {
+            let Some(Detail::Hysteria2(d)) = &p.detail else {
+                return Ok(ProfileOutbound::Unsupported(type_name(p.r#type)));
+            };
+            // down_mbps сервера → rx_bps клиента (Go: ReceiveBPS из ответа;
+            // в клиенте rx_bps=0 → BBR по умолчанию, как при отсутствии
+            // полосы в профиле).
+            Ok(ProfileOutbound::Hysteria2(Hy2Config {
+                server: p.address.clone(),
+                server_port: u16::try_from(p.port)
+                    .map_err(|_| ConvertError("port > 65535".into()))?,
+                sni: stream_sni(p.stream.as_ref(), &p.address),
+                password: d.password.clone(),
+                rx_bps: 0,
+                skip_verify: stream_insecure(p.stream.as_ref()),
+            }))
+        }
         ProfileType::Tuic => {
             let Some(Detail::Tuic(d)) = &p.detail else {
                 return Ok(ProfileOutbound::Unsupported(type_name(p.r#type)));
