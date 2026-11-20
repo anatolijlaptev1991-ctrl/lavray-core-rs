@@ -142,6 +142,10 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
       socket2 IP_TRANSPARENT + SO_ORIGINAL_DST) + nftables-генератор
       (d9ee026) — готово; UDP tproxy (recvmsg gso/orig-dst) и
       lavray-core serve-интеграция — остаток.
+- [ ] UDP tproxy: recvmsg(IP_RECVORIGDSTADDR) без unsafe — socket2/rustix
+      safe-API нет; нужно sys-обёртка крейт или осознанное исключение из
+      политики unsafe_code=forbid (решение владельца). TCP-redirect уже
+      работает (redirect_inbound).
 - [ ] updates, MCP.
 - [x] Полный async relay в tun_proxy (aa3bdbf/dc6d134): gvisor-модель
       SYN-перехвата — слушатель под конкретный dst (цель из SYN, чужой
