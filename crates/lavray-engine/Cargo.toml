@@ -30,6 +30,7 @@ getrandom = { workspace = true }
 rustls = { workspace = true }
 tokio-rustls = { workspace = true }
 quinn = { workspace = true }
+smoltcp = { workspace = true }
 rcgen = { workspace = true }
 webpki-roots = { workspace = true }
 aes = { workspace = true }
