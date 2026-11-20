@@ -12,6 +12,7 @@ mod listener;
 mod outbound_select;
 mod ruleset;
 mod serve;
+mod updates;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -38,6 +39,9 @@ fn main() {
                 }
             };
             std::process::exit(code);
+        }
+        Some("updates") => {
+            std::process::exit(updates::run_check(&args[3..]));
         }
         Some("check") => {
             std::process::exit(cli::run_check(&args[2..]));

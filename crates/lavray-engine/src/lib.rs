@@ -48,6 +48,8 @@ pub mod udp_pipe_vless;
 pub mod udp_tproxy;
 #[cfg(target_os = "linux")]
 pub mod udp_tproxy_run;
+pub mod updates;
+pub mod updates_http;
 pub mod vless;
 pub mod vmess;
 pub mod ws;
