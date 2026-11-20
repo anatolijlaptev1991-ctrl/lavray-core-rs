@@ -143,9 +143,12 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
       (d9ee026) — готово; UDP tproxy (recvmsg gso/orig-dst) и
       lavray-core serve-интеграция — остаток.
 - [ ] updates, MCP.
-- [ ] Полный async relay в tun_proxy (сейчас read-to-end на чанк данных);
-      ручная wintun-валидация под админом; hy2 DNS-резолв в profile-пути
-      уже через resolve_server.
+- [x] Полный async relay в tun_proxy (aa3bdbf/dc6d134): gvisor-модель
+      SYN-перехвата — слушатель под конкретный dst (цель из SYN, чужой
+      IP не обязан быть адресом iface), канальный relay (данные клиента
+      → unbounded канал upstream-задачи; ответы обратно; EOF-сигналы),
+      Upstream: AsyncRead/AsyncWrite + into_split (QUIC hold uni).
+      Ручная wintun-валидация под админом — остаётся.
 
 ## TUN-integration волна (20.11, 894b5a4+cf0aacb)
 
