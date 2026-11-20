@@ -11,6 +11,7 @@ use std::collections::VecDeque;
 use std::net::IpAddr;
 use std::sync::{Arc, Mutex};
 
+use crate::netstack_flow::TcpFlow;
 use crate::netstack_phy::{RxToken, TxToken};
 use smoltcp::iface::{Config as IfaceConfig, Interface, SocketSet};
 use smoltcp::phy::{Device, DeviceCapabilities, Medium};
@@ -109,17 +110,8 @@ pub struct Netstack {
     cfg: NetstackConfig,
     /// Принятые TCP-соединения (данные через smoltcp-сокеты).
     accepted: VecDeque<AcceptedTcp>,
-}
-
-/// Принятое TCP-соединение из TUN для проксирования.
-#[derive(Debug, Clone)]
-pub struct TcpFlow {
-    /// Адрес источника (клиент в TUN-сети).
-    pub src: IpAddr,
-    /// Адрес назначения (куда шёл трафик).
-    pub dst: IpAddr,
-    /// Порт назначения.
-    pub dst_port: u16,
+    /// Слушающие сокеты: (handle, порт).
+    listeners: Vec<(smoltcp::iface::SocketHandle, u16)>,
 }
 
 impl Netstack {
@@ -148,11 +140,28 @@ impl Netstack {
             device_adapter: adapter,
             cfg,
             accepted: VecDeque::new(),
+            listeners: Vec::new(),
         })
     }
 
     /// Один шаг poll: обработать пакеты из TunIo и smoltcp-сокеты.
     /// Возвращает TCP-флоу, готовые к проксированию.
+    /// Начать слушать TCP-порт (делегат netstack_flow).
+    pub fn listen_port(&mut self, port: u16, rx_buf: usize, tx_buf: usize) {
+        crate::netstack_flow::listen_port(
+            &mut self.sockets,
+            &mut self.listeners,
+            port,
+            rx_buf,
+            tx_buf,
+        );
+    }
+
+    /// Установленные соединения на слушающих портах.
+    pub fn accept_established(&mut self) -> Vec<(u16, smoltcp::iface::SocketHandle)> {
+        crate::netstack_flow::accept_established(&mut self.sockets, &mut self.listeners)
+    }
+
     pub fn poll(&mut self, tun: &mut dyn TunIo) -> Result<Vec<TcpFlow>, NetstackError> {
         let flows = Vec::new();
         // 1. Пакеты из TUN → rx-очередь netstack

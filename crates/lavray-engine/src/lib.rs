@@ -16,6 +16,7 @@ pub mod hy2;
 pub mod hy2_config;
 pub mod hy2_stream;
 pub mod netstack;
+pub mod netstack_flow;
 pub mod netstack_phy;
 pub mod profile_outbound;
 pub mod reality;
