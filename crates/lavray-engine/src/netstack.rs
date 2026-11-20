@@ -11,6 +11,7 @@ use std::collections::VecDeque;
 use std::net::IpAddr;
 use std::sync::{Arc, Mutex};
 
+use crate::netstack_phy::{RxToken, TxToken};
 use smoltcp::iface::{Config as IfaceConfig, Interface, SocketSet};
 use smoltcp::phy::{Device, DeviceCapabilities, Medium};
 use smoltcp::socket::tcp;
@@ -64,7 +65,7 @@ impl Device for TunDeviceAdapter {
     fn receive(&mut self, _timestamp: Instant) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
         let pkt = self.rx_queue.lock().ok()?.pop_front()?;
         Some((
-            RxToken { buffer: pkt },
+            crate::netstack_phy::rx_token(pkt),
             TxToken {
                 queue: Arc::clone(&self.tx_queue),
             },
@@ -83,37 +84,6 @@ impl Device for TunDeviceAdapter {
         caps.max_transmission_unit = 1500;
         caps.max_burst_size = None;
         caps
-    }
-}
-
-struct RxToken {
-    buffer: Vec<u8>,
-}
-
-impl smoltcp::phy::RxToken for RxToken {
-    fn consume<R, F>(self, f: F) -> R
-    where
-        F: FnOnce(&mut [u8]) -> R,
-    {
-        f(&mut { self.buffer })
-    }
-}
-
-struct TxToken {
-    queue: Arc<Mutex<VecDeque<Vec<u8>>>>,
-}
-
-impl smoltcp::phy::TxToken for TxToken {
-    fn consume<R, F>(self, len: usize, f: F) -> R
-    where
-        F: FnOnce(&mut [u8]) -> R,
-    {
-        let mut pkt = vec![0u8; len];
-        let result = f(&mut pkt);
-        if let Ok(mut q) = self.queue.lock() {
-            q.push_back(pkt);
-        }
-        result
     }
 }
 
@@ -139,6 +109,17 @@ pub struct Netstack {
     cfg: NetstackConfig,
     /// Принятые TCP-соединения (данные через smoltcp-сокеты).
     accepted: VecDeque<AcceptedTcp>,
+}
+
+/// Принятое TCP-соединение из TUN для проксирования.
+#[derive(Debug, Clone)]
+pub struct TcpFlow {
+    /// Адрес источника (клиент в TUN-сети).
+    pub src: IpAddr,
+    /// Адрес назначения (куда шёл трафик).
+    pub dst: IpAddr,
+    /// Порт назначения.
+    pub dst_port: u16,
 }
 
 impl Netstack {
@@ -168,6 +149,35 @@ impl Netstack {
             cfg,
             accepted: VecDeque::new(),
         })
+    }
+
+    /// Один шаг poll: обработать пакеты из TunIo и smoltcp-сокеты.
+    /// Возвращает TCP-флоу, готовые к проксированию.
+    pub fn poll(&mut self, tun: &mut dyn TunIo) -> Result<Vec<TcpFlow>, NetstackError> {
+        let flows = Vec::new();
+        // 1. Пакеты из TUN → rx-очередь netstack
+        while let Ok(pkt) = tun.read_packet() {
+            if let Ok(mut q) = self.device_adapter.rx_queue.lock() {
+                q.push_back(pkt);
+            }
+        }
+        // 2. smoltcp poll: обработка rx/tx
+        let now = Instant::now();
+        self.iface
+            .poll(now, &mut self.device_adapter, &mut self.sockets);
+        // 3. tx-очередь → TUN
+        while let Some(pkt) = self
+            .device_adapter
+            .tx_queue
+            .lock()
+            .ok()
+            .and_then(|mut q| q.pop_front())
+        {
+            tun.write_packet(&pkt)
+                .map_err(|e| NetstackError(format!("tun write: {e}")))?;
+        }
+        // 4. Разбор новых TCP-соединений (SYN/ESTABLISHED через smoltcp listening sockets — 7f-3c-4c)
+        Ok(flows)
     }
 }
 
