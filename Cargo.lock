@@ -1223,6 +1223,7 @@ version = "0.9.3"
 dependencies = [
  "lavray-api",
  "lavray-engine",
+ "lavray-model",
  "lavray-proto",
  "lavray-rules",
  "lavray-sbconfig",

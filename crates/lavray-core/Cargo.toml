@@ -28,4 +28,5 @@ tokio-stream = { workspace = true }
 workspace = true
 
 [dev-dependencies]
+lavray-model = { path = "../lavray-model" }
 serde_json = { workspace = true }

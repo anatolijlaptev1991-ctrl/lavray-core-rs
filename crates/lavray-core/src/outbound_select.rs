@@ -66,9 +66,16 @@ mod tests {
         let st = store
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let p: lavray_model::profile::Profile =
-            serde_json::from_str(r#"{"type":"hysteria2","name":"h","address":"1.2.3.4","port":443,"detail":{"password":"p"}}"#)
-                .expect("profile");
+        let gid = st
+            .create_group(&lavray_model::group::Group {
+                name: "g".into(),
+                ..lavray_model::group::Group::default()
+            })
+            .expect("create group");
+        let json = format!(
+            r#"{{"type":"hysteria2","name":"h","address":"1.2.3.4","port":443,"group_id":{gid},"detail":{{"password":"p"}}}}"#
+        );
+        let p: lavray_model::profile::Profile = serde_json::from_str(&json).expect("profile");
         let id = st.create_profile(&p).expect("create");
         st.set_setting("outbound.profile_id", &serde_json::json!(id))
             .expect("setting");
