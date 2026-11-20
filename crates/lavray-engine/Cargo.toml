@@ -36,6 +36,7 @@ rustls = { workspace = true }
 tokio-rustls = { workspace = true }
 quinn = { workspace = true }
 smoltcp = { workspace = true }
+socket2 = { version = "0.5", features = ["all"] }
 rcgen = { workspace = true }
 webpki-roots = { workspace = true }
 aes = { workspace = true }

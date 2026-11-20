@@ -1262,6 +1262,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "smoltcp",
+ "socket2 0.5.10",
  "tokio",
  "tokio-rustls",
  "tun",

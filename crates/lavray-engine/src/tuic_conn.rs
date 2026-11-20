@@ -3,6 +3,7 @@
 //! TUIC v5-соединение: QUIC handshake, auth uni-stream, TCP bi-stream.
 
 use crate::addr::TargetAddr;
+use crate::relay::{UpRead, UpWrite};
 use crate::tuic::{TuicConfig, TuicError, auth_request, connect_request, parse_uuid};
 use std::net::SocketAddr;
 use std::pin::Pin;
@@ -96,6 +97,16 @@ pub struct TuicStream {
     conn: quinn::Connection,
     send: quinn::SendStream,
     recv: quinn::RecvStream,
+}
+
+impl TuicStream {
+    /// Разделить на половины (UpRead/UpWrite): quinn-стримы держат
+    /// Arc соединения — QUIC-соединение закрывается, когда умирают
+    /// обе половины.
+    #[must_use]
+    pub fn split(self) -> (UpRead, UpWrite) {
+        (Box::pin(self.recv), Box::pin(self.send))
+    }
 }
 
 impl AsyncWrite for TuicStream {

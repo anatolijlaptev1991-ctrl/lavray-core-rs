@@ -102,6 +102,16 @@ impl Upstream {
             Self::Tuic(s) => s.flush().await,
         }
     }
+
+    /// Разделить на owned-половины (для tokio::io::copy в двух задачах).
+    #[must_use]
+    pub fn into_split(self) -> (UpRead, UpWrite) {
+        match self {
+            Self::Split(r, w) => (r, w),
+            Self::Hy2(s) => s.split(),
+            Self::Tuic(s) => s.split(),
+        }
+    }
 }
 
 /// Порт цели TargetAddr (vless порт() уже есть; тут унификация).
