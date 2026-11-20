@@ -138,10 +138,10 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
       (tun_wintun_open_and_io --ignored) + wintun.dll (см. etalon/live
       README и .gitignore).
 - [x] 7g (MVP): бинарь `lavray-core serve` (паритет запуска Go) + API-интеграция.
-- [~] gateway (OpenWrt tproxy/nftables): redirect-inbound (TCP,
-      socket2 IP_TRANSPARENT + SO_ORIGINAL_DST) + nftables-генератор
-      (d9ee026) — готово; UDP tproxy (recvmsg gso/orig-dst) и
-      lavray-core serve-интеграция — остаток.
+- [x] gateway: redirect-inbound (TCP) + UDP tproxy (lavray-sys) +
+      nftables-генератор + serve-флаги --gateway/--gateway-udp/--tun
+      (2b3a237): активный профиль → redirect/UDP-NAT/TUN задачи.
+      Полевой тест на роутере — остаётся (ручной).
 - [x] UDP tproxy: крейт `lavray-sys` (осознанное исключение из
       unsafe_code=forbid, изолированный recvmsg c IP_RECVORIGDSTADDR;
       9efbd91) + UDP NAT inbound (udp_tproxy[_run].rs: bind(orig_dst),
