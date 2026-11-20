@@ -142,3 +142,25 @@ mod wintun_io {
         }
     }
 }
+
+#[cfg(target_os = "linux")]
+mod linux_io {
+    //! TunIo-адаптер Linux: std Read/Write девайса → netstack TunIo
+    //! (блокирующие вызовы — poll-цикл в выделенной задаче).
+    use super::TunDevice;
+    use crate::netstack_types::TunIo;
+    use std::io::Write;
+
+    impl TunIo for TunDevice {
+        fn read_packet(&mut self) -> std::io::Result<Vec<u8>> {
+            let mut buf = vec![0u8; 65_535];
+            let n = std::io::Read::read(&mut self.dev, &mut buf)?;
+            buf.truncate(n);
+            Ok(buf)
+        }
+
+        fn write_packet(&mut self, pkt: &[u8]) -> std::io::Result<()> {
+            self.dev.write_all(pkt)
+        }
+    }
+}

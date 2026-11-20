@@ -91,36 +91,59 @@ impl Hy2Udp {
         }
     }
 
-    /// Собрать datagram (один фрагмент; данные ≤ 1200 — sing-box MTU).
-    fn pack(&mut self, data: &[u8], target: &TargetAddr) -> Vec<u8> {
+    /// Отправить пакет: ≤ MTU — один datagram, больше — фрагменты
+    /// (parity Go fragUDPMessage: destination в КАЖДОМ фрагменте,
+    /// fragmentTotal = число частей, fragmentID = индекс).
+    pub(crate) async fn send(&mut self, data: &[u8], target: &TargetAddr) -> io::Result<()> {
+        let dest = Self::dest_string(target);
+        let mtu = crate::hy2_config::udp_mtu(&dest);
+        if mtu == 0 {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "hy2 udp: dest слишком длинный",
+            ));
+        }
         self.packet_id = self.packet_id.wrapping_add(1);
         let pid = self.packet_id;
-        let dest = Self::dest_string(target);
+        if data.len() <= mtu {
+            let pkt = Self::pack_frag(self.session_id, pid, 0, 1, &dest, data);
+            self.conn
+                .send_datagram_wait(pkt.into())
+                .await
+                .map_err(|e| io::Error::other(format!("hy2 datagram: {e}")))?;
+            return Ok(());
+        }
+        let total = u8::try_from(data.len().div_ceil(mtu))
+            .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "hy2 udp: > 255 фрагментов"))?;
+        for (idx, chunk) in data.chunks(mtu).enumerate() {
+            let Ok(fid) = u8::try_from(idx) else { break };
+            let pkt = Self::pack_frag(self.session_id, pid, fid, total, &dest, chunk);
+            self.conn
+                .send_datagram_wait(pkt.into())
+                .await
+                .map_err(|e| io::Error::other(format!("hy2 datagram: {e}")))?;
+        }
+        Ok(())
+    }
+
+    /// Собрать один datagram udpMessage (возможно фрагмент).
+    fn pack_frag(
+        session_id: u32,
+        packet_id: u16,
+        frag_id: u8,
+        frag_total: u8,
+        dest: &str,
+        data: &[u8],
+    ) -> Vec<u8> {
         let mut out = Vec::with_capacity(8 + 8 + dest.len() + data.len());
-        out.extend_from_slice(&self.session_id.to_be_bytes());
-        out.extend_from_slice(&pid.to_be_bytes());
-        out.push(0); // fragmentID
-        out.push(1); // fragmentTotal
-        // VString: QUIC-varint длины + строка
+        out.extend_from_slice(&session_id.to_be_bytes());
+        out.extend_from_slice(&packet_id.to_be_bytes());
+        out.push(frag_id);
+        out.push(frag_total);
         crate::hy2_config::write_varint(&mut out, dest.len() as u64);
         out.extend_from_slice(dest.as_bytes());
         out.extend_from_slice(data);
         out
-    }
-
-    /// Отправить пакет (datagram; разбиение не поддержано — пакеты ≤ 1200).
-    pub(crate) async fn send(&mut self, data: &[u8], target: &TargetAddr) -> io::Result<()> {
-        if data.len() > 1200 {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "hy2 udp: пакет > 1200 (фрагментация — волна QUIC-UDP-2)",
-            ));
-        }
-        let pkt = self.pack(data, target);
-        self.conn
-            .send_datagram_wait(pkt.into())
-            .await
-            .map_err(|e| io::Error::other(format!("hy2 datagram: {e}")))
     }
 
     /// Принять datagram, распаковать, собрать фрагменты; вернуть данные.

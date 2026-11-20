@@ -153,6 +153,9 @@ impl Netstack {
         // 1. Пакеты из TUN → SYN-перехват (gvisor-модель: слушатель под
         //    конкретный dst ДО smoltcp poll) → rx-очередь
         while let Ok(pkt) = self.tun.read_packet() {
+            if pkt.is_empty() {
+                break; // канал читателя пуст (нет данных в этой итерации)
+            }
             catch_syn_packet(&mut self.sockets, &mut self.listeners, &pkt);
             if let Ok(mut q) = self.device_adapter.rx_queue.lock() {
                 q.push_back(pkt);

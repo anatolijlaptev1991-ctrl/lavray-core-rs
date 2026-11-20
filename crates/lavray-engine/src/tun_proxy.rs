@@ -1,7 +1,7 @@
+use crate::direct::Outbound;
 use crate::netstack::{Netstack, NetstackConfig};
 use crate::netstack_types::NetstackError;
 use crate::profile_outbound::{ProfileOutbound, from_profile};
-use crate::tun_outbound::Outbound;
 use crate::tun_relay::{FlowState, ToClient, spawn_upstream};
 use std::collections::HashMap;
 use std::net::IpAddr;
@@ -15,8 +15,6 @@ pub struct TunProxyConfig {
     pub address: IpAddr,
     /// Префикс TUN-сети.
     pub prefix: u8,
-    /// Порт, который слушаем в TUN (обычно 80/443/все).
-    pub listen_port: u16,
     /// Выбранный outbound (VLESS / Hysteria2 / TUIC).
     pub outbound: Outbound,
 }
@@ -37,7 +35,7 @@ impl std::error::Error for ProxyError {}
 /// Неподдержанный тип.
 pub fn check_profile(p: &lavray_model::profile::Profile) -> Result<Outbound, ProxyError> {
     match from_profile(p) {
-        Ok(ProfileOutbound::Vless(v)) => Ok(Outbound::Vless(v)),
+        Ok(ProfileOutbound::Vless(v)) => Ok(Outbound::Vless(Box::new(v))),
         Ok(ProfileOutbound::Hysteria2(h)) => Ok(Outbound::Hy2(h)),
         Ok(ProfileOutbound::Tuic(t)) => Ok(Outbound::Tuic(t)),
         Ok(other) => Err(ProxyError(format!(

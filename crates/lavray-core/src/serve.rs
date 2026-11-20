@@ -9,6 +9,7 @@
 use std::sync::Arc;
 
 use crate::outbound_select::{active_outbound, name as outbound_name};
+use crate::serve_modes::{ServeModes, parse_args};
 
 use lavray_proto::v1::profile_service_server::ProfileServiceServer;
 use lavray_proto::v1::routing_service_server::RoutingServiceServer;
@@ -16,46 +17,9 @@ use lavray_proto::v1::settings_service_server::SettingsServiceServer;
 use lavray_store::Store;
 use tokio::io::AsyncBufReadExt;
 
-/// Разобрать флаги serve; ошибка — сообщение (код 2).
-fn parse_args(args: &[String]) -> Result<(String, String), String> {
-    let mut listen = String::new();
-    let mut data = default_data_dir();
-    let mut i = 0;
-    while i < args.len() {
-        let arg = args[i].as_str();
-        let value = |i: &mut usize| -> Result<String, String> {
-            *i += 1;
-            args.get(*i)
-                .cloned()
-                .ok_or_else(|| format!("{arg} требует значение"))
-        };
-        match arg {
-            "--listen-socket" => listen = value(&mut i)?,
-            "--data" => data = value(&mut i)?,
-            other => return Err(format!("неизвестный флаг {other:?}")),
-        }
-        i += 1;
-    }
-    if listen.is_empty() {
-        return Err("--listen-socket обязателен".into());
-    }
-    Ok((listen, data))
-}
-
-/// Каталог данных по умолчанию: ./data рядом с бинарём.
-fn default_data_dir() -> String {
-    std::env::current_exe()
-        .ok()
-        .and_then(|p| {
-            p.parent()
-                .map(|d| d.join("data").to_string_lossy().into_owned())
-        })
-        .unwrap_or_else(|| "data".into())
-}
-
 /// Точка входа serve; код возврата процесса.
 pub fn run(args: &[String]) -> i32 {
-    let (listen, data) = match parse_args(args) {
+    let (listen, data, modes) = match parse_args(args) {
         Ok(v) => v,
         Err(e) => {
             eprintln!("lavray-core serve: {e}");
@@ -66,10 +30,10 @@ pub fn run(args: &[String]) -> i32 {
         .enable_all()
         .build()
         .expect("tokio runtime");
-    rt.block_on(serve(listen, data))
+    rt.block_on(serve(listen, data, modes))
 }
 
-async fn serve(listen: String, data: String) -> i32 {
+async fn serve(listen: String, data: String, modes: ServeModes) -> i32 {
     // §3.2: токены из stdin (первая строка — auth; вторая — агентский
     // MCP, может не прийти). Ошибка чтения — код 1.
     if let Err(e) = read_startup_stdin().await {
@@ -101,7 +65,7 @@ async fn serve(listen: String, data: String) -> i32 {
     let inbound = match lavray_engine::start(lavray_engine::MixedConfig {
         listen: format!("{bind_addr}:{bind_port}"),
         socks_auth: None,
-        outbound,
+        outbound: outbound.clone(),
     })
     .await
     {
@@ -112,11 +76,19 @@ async fn serve(listen: String, data: String) -> i32 {
         }
     };
 
+    // Дополнительные режимы (gateway/tun) — задачи на том же outbound;
+    // завершаются при смерти процесса (демон-модель).
+    let (modes_shutdown_tx, modes_shutdown_rx) = tokio::sync::watch::channel(false);
+    let modes_outbound = Arc::new(outbound.clone());
+    crate::serve_modes::spawn_modes(&modes, &modes_outbound, &modes_shutdown_rx);
+
     if let Err(e) = crate::listener::bind_and_serve(build_router(store), &listen).await {
         eprintln!("lavray-core: {e}");
+        let _ = modes_shutdown_tx.send(true);
         return 1;
     }
     inbound.stop();
+    let _ = modes_shutdown_tx.send(true);
     0
 }
 

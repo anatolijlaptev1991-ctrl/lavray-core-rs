@@ -6,7 +6,7 @@
 //! relay: цикл никогда не ждёт EOF.
 
 use crate::addr::TargetAddr;
-use crate::tun_outbound::Outbound;
+use crate::direct::Outbound;
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::mpsc;
@@ -53,7 +53,7 @@ async fn upstream_task(
     mut to_up: mpsc::UnboundedReceiver<Vec<u8>>,
     from_up: mpsc::UnboundedSender<ToClient>,
 ) {
-    let Ok(mut up) = outbound.connect(&target).await else {
+    let Ok((mut up_r, mut up_w)) = outbound.connect(&target).await else {
         let _ = from_up.send(ToClient::Eof);
         return;
     };
@@ -63,11 +63,11 @@ async fn upstream_task(
             data = to_up.recv() => {
                 match data {
                     Some(d) if !d.is_empty() => {
-                        if up.write_all(&d).await.is_err() {
+                        if up_w.write_all(&d).await.is_err() {
                             let _ = from_up.send(ToClient::Eof);
                             return;
                         }
-                        if up.flush().await.is_err() {
+                        if up_w.flush().await.is_err() {
                             let _ = from_up.send(ToClient::Eof);
                             return;
                         }
@@ -76,7 +76,7 @@ async fn upstream_task(
                     _ => break,
                 }
             }
-            n = up.read(&mut buf) => {
+            n = up_r.read(&mut buf) => {
                 match n {
                     Ok(0) | Err(_) => {
                         let _ = from_up.send(ToClient::Eof);

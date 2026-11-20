@@ -8,7 +8,7 @@
 #![cfg(target_os = "linux")]
 
 use crate::addr::TargetAddr;
-use crate::tun_outbound::Outbound;
+use crate::direct::Outbound;
 use socket2::{Domain, Protocol, Socket, Type};
 use std::collections::HashMap;
 use std::net::SocketAddr;

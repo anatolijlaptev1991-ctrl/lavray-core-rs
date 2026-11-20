@@ -6,7 +6,7 @@
 //! bidirectional relay. Роутерная часть — `nftables.rs`.
 
 use crate::addr::TargetAddr;
-use crate::tun_outbound::Outbound;
+use crate::direct::Outbound;
 use socket2::{Domain, Protocol, Socket, Type};
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -106,8 +106,7 @@ async fn relay(
     target: TargetAddr,
     outbound: Arc<Outbound>,
 ) -> std::io::Result<()> {
-    let upstream = outbound.connect(&target).await?;
-    let (mut up_r, mut up_w) = upstream.into_split();
+    let (mut up_r, mut up_w) = outbound.connect(&target).await?;
     let (mut cl_r, mut cl_w) = tokio::io::split(stream);
 
     let c2u = tokio::spawn(async move {

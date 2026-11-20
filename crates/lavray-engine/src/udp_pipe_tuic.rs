@@ -43,36 +43,61 @@ pub async fn tuic_connect(cfg: &TuicConfig, target: &TargetAddr) -> io::Result<U
 }
 
 impl TuicUdp {
-    fn pack(&mut self, data: &[u8], target: &TargetAddr) -> io::Result<Vec<u8>> {
+    pub(crate) async fn send(&mut self, data: &[u8], target: &TargetAddr) -> io::Result<()> {
+        let addr_len = addr_port_len_of(target)?;
+        let mtu = (1200_usize).saturating_sub(10 + addr_len);
+        if mtu == 0 {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "tuic udp: слишком длинный адрес",
+            ));
+        }
         self.packet_id = self.packet_id.wrapping_add(1);
         let pid = self.packet_id;
+        if data.len() <= mtu {
+            let pkt = self.pack_frag(pid, 0, 1, target, data)?;
+            self.conn
+                .send_datagram_wait(pkt.into())
+                .await
+                .map_err(|e| io::Error::other(format!("tuic datagram: {e}")))?;
+            return Ok(());
+        }
+        let total = u8::try_from(data.len().div_ceil(mtu)).map_err(|_| {
+            io::Error::new(io::ErrorKind::InvalidData, "tuic udp: > 255 фрагментов")
+        })?;
+        for (idx, chunk) in data.chunks(mtu).enumerate() {
+            let Ok(fid) = u8::try_from(idx) else { break };
+            let pkt = self.pack_frag(pid, fid, total, target, chunk)?;
+            self.conn
+                .send_datagram_wait(pkt.into())
+                .await
+                .map_err(|e| io::Error::other(format!("tuic datagram: {e}")))?;
+        }
+        Ok(())
+    }
+
+    /// Собрать один datagram CommandPacket (возможно фрагмент).
+    fn pack_frag(
+        &mut self,
+        packet_id: u16,
+        frag_id: u8,
+        frag_total: u8,
+        target: &TargetAddr,
+        data: &[u8],
+    ) -> io::Result<Vec<u8>> {
         let mut out = Vec::with_capacity(10 + 18 + data.len());
         out.push(5); // version
-        out.push(2); // CommandPacket (iota-блок: auth=0, connect=1, packet=2)
+        out.push(2); // CommandPacket
         out.extend_from_slice(&self.session_id.to_be_bytes());
-        out.extend_from_slice(&pid.to_be_bytes());
-        out.push(1); // fragmentTotal
-        out.push(0); // fragmentID
+        out.extend_from_slice(&packet_id.to_be_bytes());
+        out.push(frag_total);
+        out.push(frag_id);
         let dlen = u16::try_from(data.len())
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "tuic udp: > 65535"))?;
         out.extend_from_slice(&dlen.to_be_bytes());
         crate::tuic::write_addr_port(&mut out, target);
         out.extend_from_slice(data);
         Ok(out)
-    }
-
-    pub(crate) async fn send(&mut self, data: &[u8], target: &TargetAddr) -> io::Result<()> {
-        if data.len() > 1200 {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "tuic udp: пакет > 1200 (фрагментация — волна QUIC-UDP-2)",
-            ));
-        }
-        let pkt = self.pack(data, target)?;
-        self.conn
-            .send_datagram_wait(pkt.into())
-            .await
-            .map_err(|e| io::Error::other(format!("tuic datagram: {e}")))
     }
 
     /// Принять datagram, распаковать; фрагменты собираются по packetID.
@@ -141,4 +166,11 @@ fn addr_port_len(b: &[u8]) -> io::Result<usize> {
             "tuic addr: ATYP",
         )),
     }
+}
+
+/// Длина ATYP-адреса цели (для расчёта MTU).
+fn addr_port_len_of(target: &TargetAddr) -> io::Result<usize> {
+    let mut probe = Vec::new();
+    crate::tuic::write_addr_port(&mut probe, target);
+    addr_port_len(&probe)
 }

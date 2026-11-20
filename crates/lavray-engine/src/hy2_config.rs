@@ -53,3 +53,25 @@ pub fn write_varint(out: &mut Vec<u8>, v: u64) {
         ]);
     }
 }
+
+/// QUIC-varint длина значения (1/2/4/8).
+#[must_use]
+pub fn varint_len_val(v: usize) -> usize {
+    if v < 64 {
+        1
+    } else if v < 16_384 {
+        2
+    } else if v < 1_073_741_824 {
+        4
+    } else {
+        8
+    }
+}
+
+/// MTU данных hysteria2 UDP: maxPacketSize(1197) − headerSize(dest)
+/// (parity Go udpMTU).
+#[must_use]
+pub fn udp_mtu(dest: &str) -> usize {
+    let header = 8 + varint_len_val(dest.len()) + dest.len();
+    (1200_usize - 3).saturating_sub(header)
+}

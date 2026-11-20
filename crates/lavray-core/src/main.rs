@@ -12,6 +12,7 @@ mod listener;
 mod outbound_select;
 mod ruleset;
 mod serve;
+mod serve_modes;
 mod updates;
 
 fn main() {
