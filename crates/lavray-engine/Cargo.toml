@@ -17,6 +17,7 @@ authors.workspace = true
 tun = { package = "tun", version = "0.6", default-features = false, features = ["async"] }
 
 [dependencies]
+lavray-model = { path = "../lavray-model" }
 tokio = { workspace = true }
 blake3 = { workspace = true }
 aes-gcm = { workspace = true }

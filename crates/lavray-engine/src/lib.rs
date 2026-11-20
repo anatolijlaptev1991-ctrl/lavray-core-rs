@@ -15,6 +15,7 @@ pub mod http_connect;
 pub mod hy2;
 pub mod hy2_config;
 pub mod hy2_stream;
+pub mod profile_outbound;
 pub mod reality;
 pub mod relay;
 pub mod server;
