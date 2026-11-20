@@ -80,3 +80,32 @@ pub async fn udp_connect(outbound: &Arc<Outbound>, target: &TargetAddr) -> io::R
         Outbound::Tuic(cfg) => crate::udp_pipe_tuic::tuic_connect(cfg, target).await,
     }
 }
+
+/// QUIC-сессия hysteria2 с auth для UDP-каналов: соединение + hold
+/// uni-потоков (control/QPACK живут до конца сессии).
+///
+/// # Errors
+/// I/O / TLS / auth.
+pub async fn connect_hy2_udp(
+    cfg: &crate::hy2::Hy2Config,
+) -> Result<(quinn::Connection, Arc<[quinn::SendStream; 3]>), String> {
+    let client_cfg =
+        crate::quic_tls::client_config(cfg.skip_verify, &["h3"]).map_err(|e| e.clone())?;
+    let addr = crate::hy2_conn::resolve_server(&cfg.server, cfg.server_port)
+        .await
+        .map_err(|e| e.0)?;
+    let mut endpoint =
+        quinn::Endpoint::client("0.0.0.0:0".parse().map_err(|e| format!("bind: {e}"))?)
+            .map_err(|e| format!("endpoint: {e}"))?;
+    endpoint.set_default_client_config(client_cfg);
+    let conn = endpoint
+        .connect(addr, &cfg.sni)
+        .map_err(|e| format!("connect: {e}"))?
+        .await
+        .map_err(|e| format!("quic handshake: {e}"))?;
+    let (control, qenc, qdec) = crate::hy2_conn::open_h3_streams(&conn)
+        .await
+        .map_err(|e| e.0)?;
+    crate::hy2_conn::auth(&conn, cfg).await.map_err(|e| e.0)?;
+    Ok((conn, Arc::new([control, qenc, qdec])))
+}

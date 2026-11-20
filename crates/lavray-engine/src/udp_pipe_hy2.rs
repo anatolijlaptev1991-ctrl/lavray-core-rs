@@ -127,7 +127,7 @@ impl Hy2Udp {
     }
 
     /// Собрать один datagram udpMessage (возможно фрагмент).
-    fn pack_frag(
+    pub fn pack_frag(
         session_id: u32,
         packet_id: u16,
         frag_id: u8,

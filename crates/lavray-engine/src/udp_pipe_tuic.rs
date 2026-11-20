@@ -77,7 +77,7 @@ impl TuicUdp {
     }
 
     /// Собрать один datagram CommandPacket (возможно фрагмент).
-    fn pack_frag(
+    pub fn pack_frag(
         &mut self,
         packet_id: u16,
         frag_id: u8,
@@ -173,4 +173,71 @@ fn addr_port_len_of(target: &TargetAddr) -> io::Result<usize> {
     let mut probe = Vec::new();
     crate::tuic::write_addr_port(&mut probe, target);
     addr_port_len(&probe)
+}
+
+/// Свободная распаковка tuic CommandPacket datagram (для бенчей и recv).
+///
+/// # Errors
+/// Короткий/обрезанный datagram.
+pub fn unpack_tuic_msg<S: std::hash::BuildHasher>(
+    dgram: &[u8],
+    frags: &mut HashMap<u16, Vec<(u8, Vec<u8>)>, S>,
+) -> io::Result<Option<Vec<u8>>> {
+    if dgram.len() < 10 {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "tuic udp: короткий",
+        ));
+    }
+    let pid = u16::from_be_bytes([dgram[2], dgram[3]]);
+    let frag_total = dgram[4];
+    let frag_id = dgram[5];
+    let dlen = u16::from_be_bytes([dgram[8], dgram[9]]) as usize;
+    let mut off = 10;
+    let addr_len = addr_port_len(&dgram[off..])?;
+    off += addr_len;
+    if dgram.len() < off + dlen {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "tuic udp: data обрезан",
+        ));
+    }
+    let data = dgram[off..off + dlen].to_vec();
+    if frag_total <= 1 {
+        return Ok(Some(data));
+    }
+    let parts = frags.entry(pid).or_default();
+    parts.push((frag_id, data));
+    if parts.len() == usize::from(frag_total) {
+        parts.sort_by_key(|(id, _)| *id);
+        let full: Vec<u8> = parts.iter().flat_map(|(_, d)| d.iter().copied()).collect();
+        frags.remove(&pid);
+        Ok(Some(full))
+    } else {
+        Ok(None)
+    }
+}
+
+/// Свободная сборка CommandPacket (для бенчей; без соединения).
+#[must_use]
+pub fn pack_tuic_msg(
+    session_id: u16,
+    packet_id: u16,
+    frag_total: u8,
+    frag_id: u8,
+    target: &TargetAddr,
+    data: &[u8],
+) -> Vec<u8> {
+    let mut out = Vec::with_capacity(10 + 18 + data.len());
+    out.push(5);
+    out.push(2);
+    out.extend_from_slice(&session_id.to_be_bytes());
+    out.extend_from_slice(&packet_id.to_be_bytes());
+    out.push(frag_total);
+    out.push(frag_id);
+    let dlen = u16::try_from(data.len()).unwrap_or(0xFFFF);
+    out.extend_from_slice(&dlen.to_be_bytes());
+    crate::tuic::write_addr_port(&mut out, target);
+    out.extend_from_slice(data);
+    out
 }
