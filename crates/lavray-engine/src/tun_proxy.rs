@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-only
 //! Poll-цикл движка поверх TUN+netstack (волна 7f-3c-4b-интеграция):
-//! accept_established → на каждое соединение tokio-задача с VLESS
-//! outbound (через profile_outbound::VlessOutbound) + копирование
-//! smoltcp-сокета ↔ upstream.
+//! accept_established → на каждое соединение upstream-задача через
+//! универсальный outbound-мост (VLESS / Hysteria2 / TUIC —
+//! tun_outbound::Outbound) + копирование smoltcp-сокета ↔ upstream.
 use crate::addr::TargetAddr;
 use crate::netstack::{Netstack, NetstackConfig};
 use crate::profile_outbound::{ProfileOutbound, from_profile};
-use crate::vless::client::VlessOutbound;
+use crate::tun_outbound::Outbound;
 use std::net::IpAddr;
 use std::sync::Arc;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use std::time::Duration;
+
 /// Конфигурация TUN-прокси.
 #[derive(Debug, Clone)]
 pub struct TunProxyConfig {
@@ -19,9 +20,10 @@ pub struct TunProxyConfig {
     pub prefix: u8,
     /// Порт, который слушаем в TUN (обычно 80/443/все).
     pub listen_port: u16,
-    /// VLESS-профиль (address/port/uuid/sni).
-    pub vless: VlessOutbound,
+    /// Выбранный outbound (VLESS / Hysteria2 / TUIC).
+    pub outbound: Outbound,
 }
+
 /// Ошибка poll-цикла.
 #[derive(Debug)]
 pub struct ProxyError(pub String);
@@ -31,19 +33,23 @@ impl std::fmt::Display for ProxyError {
     }
 }
 impl std::error::Error for ProxyError {}
-/// Проверить, что профиль поддержан движком (VLESS/Trojan).
+
+/// Проверить, что профиль поддержан движком (VLESS/Hysteria2/TUIC).
 ///
 /// # Errors
 /// Неподдержанный тип.
-pub fn check_profile(p: &lavray_model::profile::Profile) -> Result<VlessOutbound, ProxyError> {
+pub fn check_profile(p: &lavray_model::profile::Profile) -> Result<Outbound, ProxyError> {
     match from_profile(p) {
-        Ok(ProfileOutbound::Vless(v)) => Ok(v),
+        Ok(ProfileOutbound::Vless(v)) => Ok(Outbound::Vless(v)),
+        Ok(ProfileOutbound::Hysteria2(h)) => Ok(Outbound::Hy2(h)),
+        Ok(ProfileOutbound::Tuic(t)) => Ok(Outbound::Tuic(t)),
         Ok(other) => Err(ProxyError(format!(
             "протокол ещё не подключён к tun_proxy poll-циклу: {other:?}"
         ))),
         Err(e) => Err(ProxyError(e.to_string())),
     }
 }
+
 /// Запустить poll-цикл: TUN + netstack + задачи проксирования.
 /// Функция блокирует до остановки (через shutdown-токен).
 ///
@@ -61,7 +67,7 @@ pub async fn run(
     };
     let mut netstack = Netstack::new(ns_cfg, tun).map_err(|e| ProxyError(e.to_string()))?;
     netstack.listen_port(cfg.listen_port, 65535, 65535);
-    let vless = Arc::new(cfg.vless);
+    let outbound = Arc::new(cfg.outbound);
     let mut established: Vec<(u16, smoltcp::iface::SocketHandle)> = Vec::new();
     loop {
         if *shutdown.borrow() {
@@ -82,20 +88,31 @@ pub async fn run(
                     .recv_slice(&mut buf)
                     .map_err(|e| ProxyError(format!("recv: {e}")))?;
                 if n > 0 {
-                    let v = Arc::clone(&vless);
+                    let v = Arc::clone(&outbound);
                     let data = buf[..n].to_vec();
                     let target = TargetAddr::Domain("proxy-target.invalid".into(), 80);
-                    let up = crate::vless::client::connect(&v, &target)
+                    let mut up = v
+                        .connect(&target)
                         .await
-                        .map_err(|e| ProxyError(format!("vless: {e}")))?;
-                    let (mut ur, mut uw) = up;
-                    uw.write_all(&data)
+                        .map_err(|e| ProxyError(format!("outbound: {e}")))?;
+                    up.write_all(&data)
                         .await
-                        .map_err(|e| ProxyError(format!("vless write: {e}")))?;
+                        .map_err(|e| ProxyError(format!("outbound write: {e}")))?;
+                    up.flush()
+                        .await
+                        .map_err(|e| ProxyError(format!("outbound flush: {e}")))?;
                     let mut resp = Vec::new();
-                    ur.read_to_end(&mut resp)
-                        .await
-                        .map_err(|e| ProxyError(format!("vless read: {e}")))?;
+                    let mut chunk = [0u8; 4096];
+                    loop {
+                        let n = up
+                            .read(&mut chunk)
+                            .await
+                            .map_err(|e| ProxyError(format!("outbound read: {e}")))?;
+                        if n == 0 {
+                            break;
+                        }
+                        resp.extend_from_slice(&chunk[..n]);
+                    }
                     let _ = sock.send_slice(&resp);
                 }
             }
@@ -104,7 +121,7 @@ pub async fn run(
         tokio::time::sleep(Duration::from_millis(5)).await;
     }
 }
-use std::time::Duration;
+
 /// Клонировать netstack-адаптер невозможен — заглушка для тестов.
 #[cfg(test)]
 mod tests {
@@ -120,5 +137,14 @@ mod tests {
         let p: lavray_model::profile::Profile = serde_json::from_str(json).expect("profile");
         let err = check_profile(&p).expect_err("unsupported");
         assert!(err.0.contains("custom outbound"));
+    }
+    #[test]
+    fn check_profile_accepts_hy2_and_tuic() {
+        let hy2 = r#"{"type":"hysteria2","name":"h","address":"1.2.3.4","port":443,"detail":{"password":"p"}}"#;
+        let p: lavray_model::profile::Profile = serde_json::from_str(hy2).expect("profile");
+        assert!(matches!(check_profile(&p), Ok(Outbound::Hy2(_))));
+        let tuic = r#"{"type":"tuic","name":"t","address":"1.2.3.4","port":443,"detail":{"uuid":"b831381d-6324-4d53-ad4f-8cda48b30811","password":"p"}}"#;
+        let p: lavray_model::profile::Profile = serde_json::from_str(tuic).expect("profile");
+        assert!(matches!(check_profile(&p), Ok(Outbound::Tuic(_))));
     }
 }

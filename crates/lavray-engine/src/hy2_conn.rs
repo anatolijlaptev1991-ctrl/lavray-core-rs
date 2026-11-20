@@ -26,12 +26,7 @@ pub async fn connect_with_payload(
     let client_cfg = crate::quic_tls::client_config(cfg.skip_verify, &["h3"])
         .map_err(|e| Hy2Error(e.clone()))?;
 
-    let addr = SocketAddr::new(
-        cfg.server
-            .parse()
-            .map_err(|_| Hy2Error("bad server ip (только IP; DNS — 7f-3c-4)".into()))?,
-        cfg.server_port,
-    );
+    let addr = resolve_server(&cfg.server, cfg.server_port).await?;
     let mut endpoint = quinn::Endpoint::client(
         "0.0.0.0:0"
             .parse()
@@ -56,6 +51,22 @@ pub async fn connect_with_payload(
         send,
         recv,
     })
+}
+
+/// Резолв сервера: IP или домен (tokio lookup_host; первый адрес).
+///
+/// # Errors
+/// Пустой результат резолва / I/O.
+pub async fn resolve_server(server: &str, port: u16) -> Result<SocketAddr, Hy2Error> {
+    // IP-строка резолвится без DNS (parse fast-path).
+    if let Ok(ip) = server.parse() {
+        return Ok(SocketAddr::new(ip, port));
+    }
+    tokio::net::lookup_host((server, port))
+        .await
+        .map_err(|e| Hy2Error(format!("resolve {server}: {e}")))?
+        .next()
+        .ok_or_else(|| Hy2Error(format!("resolve {server}: пустой результат")))
 }
 
 /// H3-минимум: control с пустым SETTINGS (RFC 9114 §7.2.4: первый

@@ -35,6 +35,7 @@ pub mod tuic;
 pub mod tuic_conn;
 pub mod tun;
 pub mod tun_device;
+pub mod tun_outbound;
 pub mod tun_proxy;
 pub mod vless;
 pub mod vmess;
