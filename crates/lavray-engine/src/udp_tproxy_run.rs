@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 //! Цикл UDP tproxy: читающий поток (recvmsg → NAT) + TTL-чистка.
-//! Конфиг/NAT-логика — `udp_tproxy`.
+//! NAT-записи — UdpPipe движка (VLESS/Hysteria2/TUIC UDP).
 
 use crate::udp_tproxy::{Nat, UdpTproxyConfig, UdpTproxyError, nat_get_or_create, transparent_udp};
 use std::collections::HashMap;
@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 
 /// Запустить UDP tproxy: читающий поток (recvmsg c orig-dst) → NAT →
-/// upstream; ответы → клиент от имени цели; TTL-чистка записей.
+/// UdpPipe движка; ответы → клиент от имени цели; TTL-чистка записей.
 ///
 /// # Errors
 /// Сокет/бинд/потоки.
@@ -29,7 +29,9 @@ pub async fn run(
         tokio::net::UdpSocket::from_std(std_sock)
             .map_err(|e| UdpTproxyError(format!("async listener: {e}")))?,
     );
+    let _ = &listener; // сейчас не используется: ответы идут через reply bind(orig_dst)
     let nat: Nat = Arc::new(Mutex::new(HashMap::new()));
+    let outbound = Arc::new(cfg.outbound.clone());
 
     // Читающий поток: recvmsg → (client, orig_dst, data) → async-канал.
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<(SocketAddr, SocketAddr, Vec<u8>)>();
@@ -67,10 +69,10 @@ pub async fn run(
                 let Some((client, orig_dst, data)) = msg else {
                     break;
                 };
-                let sock =
-                    nat_get_or_create(&nat, client, orig_dst, Arc::clone(&listener), true)
-                        .await?;
-                let _ = sock.send_to(&data, orig_dst).await;
+                let (reply, to_up) =
+                    nat_get_or_create(&nat, client, orig_dst, false, &outbound).await?;
+                let _ = to_up.send(data);
+                let _ = reply;
             }
         }
     }

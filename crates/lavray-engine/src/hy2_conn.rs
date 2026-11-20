@@ -74,7 +74,7 @@ pub async fn resolve_server(server: &str, port: u16) -> Result<SocketAddr, Hy2Er
 /// отклоняет bi-запросы) + QPACK encoder/decoder потоки (RFC 9204 §4.2).
 /// Потоки НЕ закрываем — по спеке живут всё соединение (держим в
 /// Hy2Stream); динамическая таблица не используется, инструкции пусты.
-async fn open_h3_streams(
+pub(crate) async fn open_h3_streams(
     conn: &quinn::Connection,
 ) -> Result<(quinn::SendStream, quinn::SendStream, quinn::SendStream), Hy2Error> {
     let mut control = conn
@@ -107,7 +107,7 @@ async fn open_h3_streams(
 }
 
 /// Auth: HTTP/3 POST /auth с Hysteria-заголовками (status 233 = ok).
-async fn auth(conn: &quinn::Connection, cfg: &Hy2Config) -> Result<(), Hy2Error> {
+pub(crate) async fn auth(conn: &quinn::Connection, cfg: &Hy2Config) -> Result<(), Hy2Error> {
     let (mut send, mut recv) = conn
         .open_bi()
         .await

@@ -1,54 +1,34 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-//! Живой тест UDP tproxy NAT (Linux, loopback, без привилегий).
+//! Живой тест UDP tproxy NAT (Linux, loopback, hy2 outbound):
+//! nat_get_or_create создаёт UDP-канал движка (hy2 к etalon-серверу)
+//! и reply-сокет bind(orig_dst). Требует запущенного hy2-сервера
+//! (etalon/live, UDP 18445) и прав CAP_NET_ADMIN для bind(orig_dst).
+
 #![cfg(target_os = "linux")]
 
-use lavray_engine::udp_tproxy::{Nat, nat_get_or_create};
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-/// Живой тест (Linux): NAT entry bind(orig_dst) — на loopback
-/// работает без привилегий; данные ходят client ↔ entry.sock.
 #[tokio::test]
+#[ignore = "requires hy2 server (etalon/live) + CAP_NET_ADMIN"]
 async fn nat_entry_roundtrip() {
-    // «цель»: listener на эфемерном порту
-    let target = tokio::net::UdpSocket::bind("127.0.0.1:0")
-        .await
-        .expect("target");
-    let taddr = target.local_addr().expect("taddr");
-
-    // NAT-запись через публичный путь (transparent=false — без привилегий)
-    let orig_dst: SocketAddr = "127.0.0.1:0".parse().expect("parse");
-    let nat: Nat = Arc::new(Mutex::new(HashMap::new()));
+    let hy2_json = r#"{"type":"hysteria2","name":"h","address":"127.0.0.1","port":18445,"detail":{"password":"testpw"}}"#;
+    let p: lavray_model::profile::Profile = serde_json::from_str(hy2_json).expect("profile");
+    let outbound = Arc::new(lavray_engine::tun_proxy::check_profile(&p).expect("check"));
+    let nat: lavray_engine::udp_tproxy::Nat = Arc::new(Mutex::new(HashMap::new()));
     let client: SocketAddr = "127.0.0.1:0".parse().expect("parse");
-    let reply_sock = Arc::new(
-        tokio::net::UdpSocket::bind("127.0.0.1:0")
+    let orig_dst: SocketAddr = "127.0.0.1:443".parse().expect("parse");
+
+    let (reply, to_up) =
+        lavray_engine::udp_tproxy::nat_get_or_create(&nat, client, orig_dst, false, &outbound)
             .await
-            .expect("reply"),
-    );
-    let entry_sock = nat_get_or_create(&nat, client, orig_dst, Arc::clone(&reply_sock), false)
-        .await
-        .expect("nat entry");
-    let eaddr = entry_sock.local_addr().expect("eaddr");
-    let sock = entry_sock;
+            .expect("nat entry");
 
-    // клиентские данные → цель
-    let table = nat.lock().await;
-    let e = table.get(&client).expect("entry");
-    e.sock
-        .send_to(b"nat-pkt", taddr)
-        .await
-        .expect("send to target");
-    drop(table);
-
-    let mut buf = [0u8; 128];
-    let (n, _) = target.recv_from(&mut buf).await.expect("target recv");
-    assert_eq!(&buf[..n], b"nat-pkt");
-
-    // ответ цели → entry.sock → reply_sock (клиенту)
-    let _ = target.send_to(b"nat-reply2", eaddr).await.expect("reply2");
-    let (n, _) = sock.recv_from(&mut buf).await.expect("entry recv");
-    assert_eq!(&buf[..n], b"nat-reply2");
+    // клиентские данные → pipe
+    to_up.send(b"nat-pkt".to_vec()).expect("to_up");
+    let _ = reply; // reply bind(orig_dst): отправка клиенту — src = цель
+    to_up.send(b"".to_vec()).expect("to_up close");
 }

@@ -20,37 +20,7 @@ pub async fn connect(
     server_addr: SocketAddr,
 ) -> Result<TuicStream, TuicError> {
     let uuid = parse_uuid(&cfg.uuid)?;
-
-    // TLS 1.3: webpki-roots или skip_verify (dangerous-верификатор).
-    let client_cfg = crate::quic_tls::client_config(cfg.skip_verify, &["h3"])
-        .map_err(|e| TuicError(e.clone()))?;
-    let mut endpoint = quinn::Endpoint::client(
-        "0.0.0.0:0"
-            .parse()
-            .map_err(|e| TuicError(format!("bind: {e}")))?,
-    )
-    .map_err(|e| TuicError(format!("endpoint: {e}")))?;
-    endpoint.set_default_client_config(client_cfg);
-
-    let conn = endpoint
-        .connect(server_addr, &cfg.sni)
-        .map_err(|e| TuicError(format!("connect: {e}")))?
-        .await
-        .map_err(|e| TuicError(format!("quic handshake: {e}")))?;
-
-    // 1. Auth uni-stream: [5][1][uuid16][token32].
-    let token = export_keying(&conn, &uuid, cfg.password.as_bytes())?;
-    let mut auth_send = conn
-        .open_uni()
-        .await
-        .map_err(|e| TuicError(format!("open uni: {e}")))?;
-    auth_send
-        .write_all(&auth_request(&uuid, &token))
-        .await
-        .map_err(|e| TuicError(format!("write auth: {e}")))?;
-    auth_send
-        .finish()
-        .map_err(|e| TuicError(format!("finish auth: {e}")))?;
+    let conn = establish(cfg, server_addr, &uuid).await?;
 
     // 2. TCP bi-stream: [5][2][addr] + payload.
     let (mut req_send, req_recv) = conn
@@ -68,6 +38,49 @@ pub async fn connect(
         send: req_send,
         recv: req_recv,
     })
+}
+
+/// QUIC-сессия с auth (handshake + auth uni-stream) — общий путь для
+/// TCP и UDP-каналов.
+///
+/// # Errors
+/// I/O / TLS / QUIC / uuid.
+pub(crate) async fn establish(
+    cfg: &TuicConfig,
+    server_addr: SocketAddr,
+    uuid: &[u8; 16],
+) -> Result<quinn::Connection, TuicError> {
+    // TLS 1.3: webpki-roots или skip_verify (dangerous-верификатор).
+    let client_cfg = crate::quic_tls::client_config(cfg.skip_verify, &["h3"])
+        .map_err(|e| TuicError(e.clone()))?;
+    let mut endpoint = quinn::Endpoint::client(
+        "0.0.0.0:0"
+            .parse()
+            .map_err(|e| TuicError(format!("bind: {e}")))?,
+    )
+    .map_err(|e| TuicError(format!("endpoint: {e}")))?;
+    endpoint.set_default_client_config(client_cfg);
+
+    let conn = endpoint
+        .connect(server_addr, &cfg.sni)
+        .map_err(|e| TuicError(format!("connect: {e}")))?
+        .await
+        .map_err(|e| TuicError(format!("quic handshake: {e}")))?;
+
+    // Auth uni-stream: [5][1][uuid16][token32].
+    let token = export_keying(&conn, uuid, cfg.password.as_bytes())?;
+    let mut auth_send = conn
+        .open_uni()
+        .await
+        .map_err(|e| TuicError(format!("open uni: {e}")))?;
+    auth_send
+        .write_all(&auth_request(uuid, &token))
+        .await
+        .map_err(|e| TuicError(format!("write auth: {e}")))?;
+    auth_send
+        .finish()
+        .map_err(|e| TuicError(format!("finish auth: {e}")))?;
+    Ok(conn)
 }
 
 /// ExportKeyingMaterial из TLS 1.3 (RFC 5705/8446 §7.5): exporter с

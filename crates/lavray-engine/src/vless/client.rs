@@ -27,14 +27,25 @@ pub struct VlessOutbound {
     pub transport: Transport,
 }
 
-/// Запрос VLESS: [0][uuid16][0][1][port BE][ATYP+addr] (+ payload следом).
+/// Команда VLESS: 1 = TCP, 2 = UDP (xray/sing-семантика).
+pub const CMD_TCP: u8 = 1;
+/// Команда UDP-проксирования поверх stream.
+pub const CMD_UDP: u8 = 2;
+
+/// Запрос VLESS: [0][uuid16][0][cmd][port BE][ATYP+addr] (+ payload следом).
 #[must_use]
 pub fn request_bytes(uuid: &[u8; 16], target: &TargetAddr) -> Vec<u8> {
+    request_bytes_cmd(uuid, target, CMD_TCP)
+}
+
+/// Запрос VLESS с явной командой (UDP — волна QUIC-UDP).
+#[must_use]
+pub fn request_bytes_cmd(uuid: &[u8; 16], target: &TargetAddr, cmd: u8) -> Vec<u8> {
     let mut out = Vec::with_capacity(1 + 16 + 1 + 1 + 2 + 1 + 255);
     out.push(0); // version
     out.extend_from_slice(uuid);
     out.push(0); // addons length (без flow)
-    out.push(1); // command TCP
+    out.push(cmd); // command
     match target {
         TargetAddr::Domain(d, p) => {
             out.extend_from_slice(&p.to_be_bytes());
@@ -84,6 +95,51 @@ pub async fn connect(o: &VlessOutbound, target: &TargetAddr) -> std::io::Result<
         Transport::Ws(dial_ws) => {
             // Upgrade поверх plain TCP → фреймы. ws+TLS — подволна 7e-2
             // (handshake над TlsStream требует generic-половин).
+            if o.tls.is_some() {
+                return Err(std::io::Error::other("vless: ws+TLS — волна 7e-2"));
+            }
+            let (mut r, mut w) =
+                crate::ws::handshake(tcp, dial_ws, &o.server.host_string()).await?;
+            w.write_all(&request).await?;
+            read_response(&mut r).await?;
+            Ok((Box::pin(r), Box::pin(w)))
+        }
+    }
+}
+
+/// UDP-канал поверх VLESS-stream: тот же хендшейк с cmd=2; пакеты
+/// [len16 BE][data] в обе стороны (xray vless UDP-over-stream).
+///
+/// # Errors
+/// I/O / TLS / некорректный UUID.
+pub async fn connect_udp(
+    o: &VlessOutbound,
+    target: &TargetAddr,
+) -> std::io::Result<(UpRead, UpWrite)> {
+    let uid =
+        uuid_bytes(&o.uuid).ok_or_else(|| std::io::Error::other("vless: некорректный UUID"))?;
+    let tcp = TcpStream::connect((o.server.host_string().as_str(), o.server.port())).await?;
+    let _ = tcp.set_nodelay(true);
+
+    let request = request_bytes_cmd(&uid, target, CMD_UDP);
+    match &o.transport {
+        Transport::Tcp => match o.tls.as_ref() {
+            None => {
+                let mut stream = tcp;
+                stream.write_all(&request).await?;
+                read_response(&mut stream).await?;
+                let (r, w) = stream.into_split();
+                Ok((Box::pin(r), Box::pin(w)))
+            }
+            Some(dial) => {
+                let mut tls = tls_connect(tcp, dial, &o.server.host_string()).await?;
+                tls.write_all(&request).await?;
+                read_response(&mut tls).await?;
+                let (r, w) = tokio::io::split(tls);
+                Ok((Box::pin(r), Box::pin(w)))
+            }
+        },
+        Transport::Ws(dial_ws) => {
             if o.tls.is_some() {
                 return Err(std::io::Error::other("vless: ws+TLS — волна 7e-2"));
             }

@@ -40,6 +40,10 @@ pub mod tun_device;
 pub mod tun_outbound;
 pub mod tun_proxy;
 pub mod tun_relay;
+pub mod udp_pipe;
+pub mod udp_pipe_hy2;
+pub mod udp_pipe_tuic;
+pub mod udp_pipe_vless;
 #[cfg(target_os = "linux")]
 pub mod udp_tproxy;
 #[cfg(target_os = "linux")]
