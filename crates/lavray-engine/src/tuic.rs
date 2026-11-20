@@ -9,10 +9,13 @@ use crate::addr::TargetAddr;
 
 /// TUIC protocol version.
 pub const VERSION: u8 = 5;
-/// Command: authenticate (uni stream).
+/// Command: authenticate (uni stream). sing-quic: отдельный const-блок,
+/// iota с 0.
 pub const CMD_AUTHENTICATE: u8 = 0;
-/// Command: TCP connect (bi stream).
-pub const CMD_CONNECT: u8 = 2;
+/// Command: TCP connect (bi stream) — вторая константа блока.
+pub const CMD_CONNECT: u8 = 1;
+/// Command: UDP packet (datagram).
+pub const CMD_PACKET: u8 = 2;
 
 /// Конфиг tuic.
 #[derive(Debug, Clone)]
@@ -65,24 +68,25 @@ fn hex_digit(b: u8) -> Result<u8, TuicError> {
     }
 }
 
-/// ATYP-адрес (sing metadata Serializer): 00 fqdn(len+host), 01 ipv4, 02 ipv6.
+/// ATYP-адрес (sing metadata Serializer, tuic: portFirst=false → адрес
+/// ПЕРЕД портом): 00 fqdn(len+host), 01 ipv4, 02 ipv6; порт u16 BE в конце.
 pub fn write_addr_port(out: &mut Vec<u8>, target: &TargetAddr) {
     match target {
         TargetAddr::Domain(d, port) => {
-            out.extend_from_slice(&port.to_be_bytes());
             out.push(0x00);
             out.push(u8::try_from(d.len()).unwrap_or(255));
             out.extend_from_slice(d.as_bytes());
+            out.extend_from_slice(&port.to_be_bytes());
         }
         TargetAddr::Ip(std::net::IpAddr::V4(v), port) => {
-            out.extend_from_slice(&port.to_be_bytes());
             out.push(0x01);
             out.extend_from_slice(&v.octets());
+            out.extend_from_slice(&port.to_be_bytes());
         }
         TargetAddr::Ip(std::net::IpAddr::V6(v), port) => {
-            out.extend_from_slice(&port.to_be_bytes());
             out.push(0x02);
             out.extend_from_slice(&v.octets());
+            out.extend_from_slice(&port.to_be_bytes());
         }
     }
 }

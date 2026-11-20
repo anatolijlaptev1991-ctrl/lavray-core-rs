@@ -6,7 +6,6 @@ use crate::addr::TargetAddr;
 use crate::tuic::{TuicConfig, TuicError, auth_request, connect_request, parse_uuid};
 use std::net::SocketAddr;
 use std::pin::Pin;
-use std::sync::Arc;
 use std::task::{Context, Poll};
 use tokio::io::{AsyncRead, AsyncWrite};
 
@@ -21,14 +20,9 @@ pub async fn connect(
 ) -> Result<TuicStream, TuicError> {
     let uuid = parse_uuid(&cfg.uuid)?;
 
-    // TLS 1.3 с webpki-roots (skip_verify — 7f-3c-4b, как в hy2).
-    let roots = Arc::new({
-        let mut r = tokio_rustls::rustls::RootCertStore::empty();
-        r.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
-        r
-    });
-    let client_cfg = quinn::ClientConfig::with_root_certificates(roots)
-        .map_err(|e| TuicError(format!("quic tls: {e}")))?;
+    // TLS 1.3: webpki-roots или skip_verify (dangerous-верификатор).
+    let client_cfg = crate::quic_tls::client_config(cfg.skip_verify, &["h3"])
+        .map_err(|e| TuicError(e.clone()))?;
     let mut endpoint = quinn::Endpoint::client(
         "0.0.0.0:0"
             .parse()
@@ -87,9 +81,11 @@ pub(crate) fn export_keying(
     uuid: &[u8; 16],
     password: &[u8],
 ) -> Result<[u8; 32], TuicError> {
-    let label = String::from_utf8_lossy(uuid).into_owned();
+    // Label — СЫРЫЕ 16 байт UUID (parity Go string(uuid[:])); наивный
+    // String::from_utf8_lossy заменяет невалидные байты на U+FFFD и
+    // ломает токен (сервер: token mismatch).
     let mut out = [0u8; 32];
-    conn.export_keying_material(&mut out, label.as_bytes(), password)
+    conn.export_keying_material(&mut out, uuid, password)
         .map_err(|e| TuicError(format!("export keying: {e:?}")))?;
     Ok(out)
 }

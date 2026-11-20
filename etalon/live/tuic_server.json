@@ -1,0 +1,22 @@
+{
+  "log": {"level": "debug"},
+  "inbounds": [
+    {
+      "type": "tuic",
+      "tag": "tuic-in",
+      "listen": "127.0.0.1",
+      "listen_port": 18443,
+      "users": [
+        {"uuid": "b831381d-6324-4d53-ad4f-8cda48b30811", "password": "testpw"}
+      ],
+      "congestion_control": "bbr",
+      "tls": {
+        "enabled": true,
+        "alpn": ["h3"],
+        "certificate_path": "cert.pem",
+        "key_path": "key.pem"
+      }
+    }
+  ],
+  "outbounds": [{"type": "direct"}]
+}

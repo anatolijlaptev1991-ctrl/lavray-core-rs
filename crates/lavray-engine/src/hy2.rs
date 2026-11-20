@@ -1,20 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-//! Hysteria2-клиент (волна QUIC): QUIC через quinn + HTTP/3-минимум для
-//! auth (POST /auth, Hysteria-Auth/CC-RX, статус 233), затем TCP-фреймы
-//! 0x401 (QUIC varint) с адресом+padding. Паритет Go sing-quic/hysteria2.
+//! Hysteria2 wire-формат (волна QUIC): QUIC varint, TCP-фреймы 0x401
+//! (адрес + padding), TCP-ответ. Клиентский коннект — в `hy2_conn`.
+//! Паритет Go sing-quic/hysteria2 internal/protocol.
 
-use std::net::SocketAddr;
-use std::sync::Arc;
+use crate::hy2_config::{Hy2Error, write_varint};
 
-use crate::h3_auth::{read_h3_auth_response, send_h3_auth};
-use crate::hy2_config::{Hy2Config, Hy2Error, write_varint};
-use crate::hy2_stream::Hy2Stream;
+pub use crate::hy2_config::Hy2Config;
 
 pub(crate) const URL_PATH: &str = "/auth";
-pub(crate) const AUTH_HEADER: &str = "Hysteria-Auth";
-pub(crate) const CC_RX_HEADER: &str = "Hysteria-CC-RX";
-pub(crate) const PADDING_HEADER: &str = "Hysteria-Padding";
 const FRAME_TCP_REQUEST: u64 = 0x401;
 /// Padding-строка Go (authRequestPadding.String()).
 pub(crate) const AUTH_PADDING: &str = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -75,6 +69,28 @@ pub fn read_tcp_response(data: &[u8]) -> Result<(), Hy2Error> {
     Ok(())
 }
 
+/// QUIC varint из потока (байт за байтом, без перечитывания данных).
+///
+/// # Errors
+/// I/O.
+pub(crate) async fn read_varint_stream(
+    recv: &mut quinn::RecvStream,
+) -> Result<(u64, usize), Hy2Error> {
+    let mut first = [0u8; 1];
+    recv.read_exact(&mut first)
+        .await
+        .map_err(|e| Hy2Error(format!("read varint: {e}")))?;
+    let len = varint_len(first[0]);
+    let mut buf = vec![first[0]];
+    buf.resize(len, 0);
+    if len > 1 {
+        recv.read_exact(&mut buf[1..])
+            .await
+            .map_err(|e| Hy2Error(format!("read varint: {e}")))?;
+    }
+    read_varint(&buf).map_err(|e| Hy2Error(e.0))
+}
+
 pub(crate) fn varint_len(first_byte: u8) -> usize {
     match first_byte >> 6 {
         0 => 1,
@@ -82,85 +98,4 @@ pub(crate) fn varint_len(first_byte: u8) -> usize {
         2 => 4,
         _ => 8,
     }
-}
-
-/// Подключение к hysteria2: QUIC + auth (HTTP/3-минимум) → открытый
-/// TCP-поток к `host:port`.
-///
-/// # Errors
-/// I/O / TLS / auth (код != 233).
-pub async fn connect(cfg: &Hy2Config, host: &str, port: u16) -> Result<Hy2Stream, Hy2Error> {
-    if cfg.skip_verify {
-        return Err(Hy2Error(
-            "skip_verify для QUIC/hysteria2 — подволна 7f-3c-4 (нужен custom verifier с Suite)"
-                .into(),
-        ));
-    }
-    let roots = Arc::new({
-        let mut r = tokio_rustls::rustls::RootCertStore::empty();
-        r.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
-        r
-    });
-    let client_cfg = quinn::ClientConfig::with_root_certificates(roots)
-        .map_err(|e| Hy2Error(format!("quic tls: {e}")))?;
-
-    let addr = SocketAddr::new(
-        cfg.server
-            .parse()
-            .map_err(|_| Hy2Error("bad server ip (только IP; DNS — 7f-3c-4)".into()))?,
-        cfg.server_port,
-    );
-    let mut endpoint = quinn::Endpoint::client(
-        "0.0.0.0:0"
-            .parse()
-            .map_err(|e| Hy2Error(format!("bind: {e}")))?,
-    )
-    .map_err(|e| Hy2Error(format!("endpoint: {e}")))?;
-    endpoint.set_default_client_config(client_cfg);
-    let conn = endpoint
-        .connect(addr, &cfg.sni)
-        .map_err(|e| Hy2Error(format!("connect: {e}")))?
-        .await
-        .map_err(|e| Hy2Error(format!("quic handshake: {e}")))?;
-
-    // Auth: HTTP/3 POST /auth с Hysteria-заголовками (status 233 = ok).
-    let (mut send, mut recv) = conn
-        .open_bi()
-        .await
-        .map_err(|e| Hy2Error(format!("open bi: {e}")))?;
-    send_h3_auth(&mut send, &cfg.password, cfg.rx_bps)
-        .await
-        .map_err(Hy2Error)?;
-    if !read_h3_auth_response(&mut recv)
-        .await
-        .map_err(|e| Hy2Error(e.clone()))?
-    {
-        conn.close(0u32.into(), b"auth failed");
-        return Err(Hy2Error("authentication failed (status != 233)".into()));
-    }
-
-    // Открыть bi-стрим под TCP-запрос: 0x401 + addr + padding.
-    let (mut req_send, mut req_recv) = conn
-        .open_bi()
-        .await
-        .map_err(|e| Hy2Error(format!("open tcp stream: {e}")))?;
-    let addr = format!("{host}:{port}");
-    let first = write_tcp_request(&addr, &[]);
-    req_send
-        .write_all(&first)
-        .await
-        .map_err(|e| Hy2Error(format!("write request: {e}")))?;
-    let mut resp = [0u8; 64];
-    let n = req_recv
-        .read(&mut resp)
-        .await
-        .map_err(|e| Hy2Error(format!("read response: {e}")))?
-        .unwrap_or(0);
-    read_tcp_response(&resp[..n]).map_err(|e| Hy2Error(e.0))?;
-
-    Ok(Hy2Stream {
-        conn,
-        send: req_send,
-        recv: req_recv,
-    })
 }

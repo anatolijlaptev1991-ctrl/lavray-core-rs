@@ -24,13 +24,12 @@ mod tuic_tests {
         let t = TargetAddr::Domain("example.com".into(), 443);
         let req = connect_request(&t, b"hi");
         assert_eq!(req[0], 5);
-        assert_eq!(req[1], 2); // cmd connect
-        // addr: port BE(2) + atyp(1)=00 + len(1) + host
-        assert_eq!(req[2], 0x01);
-        assert_eq!(req[3], 0xBB); // 443
-        assert_eq!(req[4], 0x00); // fqdn
-        assert_eq!(req[5], 11); // len("example.com")
-        assert_eq!(&req[6..17], b"example.com");
+        assert_eq!(req[1], 1); // cmd connect (sing-quic: CommandConnect = 1)
+        // addr (portFirst=false): atyp(1)=00 + len(1) + host + port BE(2)
+        assert_eq!(req[2], 0x00); // fqdn
+        assert_eq!(req[3], 11); // len("example.com")
+        assert_eq!(&req[4..15], b"example.com");
+        assert_eq!(&req[15..17], &[0x01, 0xBB]); // 443
         assert_eq!(&req[17..19], b"hi");
     }
 
@@ -47,6 +46,6 @@ mod tuic_tests {
     fn addr_port_format() {
         let mut out = Vec::new();
         write_addr_port(&mut out, &TargetAddr::Ip("1.2.3.4".parse().unwrap(), 80));
-        assert_eq!(out, vec![0, 80, 0x01, 1, 2, 3, 4]);
+        assert_eq!(out, vec![0x01, 1, 2, 3, 4, 0, 80]);
     }
 }

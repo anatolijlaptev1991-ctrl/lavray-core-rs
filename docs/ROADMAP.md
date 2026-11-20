@@ -147,6 +147,22 @@ sing-box 1.14.1-neko.1 собирается обёрткой `../sing-box/etalon
 все 37 golden cfgbuild подтверждены эталонным `check` (29 сразу + 8 после
 генерации `golden/geo/*.srs`).
 
+## Live e2e hy2/tuic против Go-серверов (20.11)
+
+`etalon/live/` — sing-box etalon 1.14.1-neko.1 inbound'ы (tuic UDP 18443,
+hysteria2 UDP 18445, self-signed). `tests/tuic_hy2_live.rs` (--ignored):
+Rust-клиент → Go-сервер → TCP-echo, оба протокола ЗЕЛЁНЫЕ. Попутно:
+- `quic_tls.rs` — skip_verify через rustls dangerous-verifier
+  (quinn QuicClientConfig::try_from не зависит от верификатора) + ALPN h3;
+- HTTP/3-минимум (h3_auth.rs): lowercase-заголовки, qpack-go формат
+  (001+0x08+3-бит varint; RIC/DeltaBase 0; control+qpack uni-потоки),
+  статус 233 = ASCII или huffman [13 2c ff];
+- tuic wire исправлен против sing-quic: CommandConnect=1, адрес перед
+  портом, EKM label = сырые байты uuid;
+- hy2: TCPRequest с payload одним write (parity clientConn.Write),
+  response — точное побайтовое чтение (read_tcp_response_exact);
+- hy2.rs разбит (ratchet): wire в hy2.rs, коннект в hy2_conn.rs.
+
 ## Критерии готовности ядра
 
 - Все сервисы API реализованы и покрыты тестами (паритет proto).

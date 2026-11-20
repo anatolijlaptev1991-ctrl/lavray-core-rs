@@ -1,0 +1,21 @@
+{
+  "log": {"level": "debug"},
+  "inbounds": [
+    {
+      "type": "hysteria2",
+      "tag": "hy2-in",
+      "listen": "127.0.0.1",
+      "listen_port": 18445,
+      "users": [
+        {"name": "user", "password": "testpw"}
+      ],
+      "tls": {
+        "enabled": true,
+        "alpn": ["h3"],
+        "certificate_path": "cert.pem",
+        "key_path": "key.pem"
+      }
+    }
+  ],
+  "outbounds": [{"type": "direct"}]
+}

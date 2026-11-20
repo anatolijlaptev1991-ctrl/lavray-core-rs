@@ -9,6 +9,15 @@ use tokio::io::{AsyncRead, AsyncWrite};
 /// Поток hysteria2 TCP (data через QUIC stream после запроса).
 pub struct Hy2Stream {
     pub(crate) conn: Connection,
+    /// H3 control-поток (SETTINGS) — держится открытым всё соединение
+    /// (чтения нет: нужен только живой дескриптор).
+    #[allow(dead_code)]
+    pub(crate) control: quinn::SendStream,
+    /// QPACK encoder/decoder потоки — держатся открытыми (RFC 9204 §4.2).
+    #[allow(dead_code)]
+    pub(crate) qpack_enc: quinn::SendStream,
+    #[allow(dead_code)]
+    pub(crate) qpack_dec: quinn::SendStream,
     pub(crate) send: quinn::SendStream,
     pub(crate) recv: quinn::RecvStream,
 }

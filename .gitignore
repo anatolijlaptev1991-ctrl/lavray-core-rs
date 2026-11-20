@@ -6,3 +6,8 @@ srv_copy.log
 dbg_*.txt
 hello_dump.txt
 hello_real.txt
+etalon/live/*.pem
+etalon/live/*.log
+etalon/live/qlog/
+etalon/live/qlog_rep/
+etalon/goclient/
