@@ -152,8 +152,10 @@ pedantic+perf=0 → суб-агент аудит → рекурсия до ну�
       len16 / hysteria2 datagrams udpMessage / tuic CommandPacket),
       udp_tproxy NAT на каналах движка; LIVE DNS hy2+tuic 2/2 (1.1.1.1:53). Полевой тест на роутере — остаётся.
 - [x] updates (7a5f058): `lavray-core updates check` — GitHub Releases
-      latest vs текущая версия; релиз v0.9.4 создан (live: «0.9.3 →
-      v0.9.4» подтверждён).
+      latest vs текущая версия; релиз v0.9.4 создан С БИНАРНИКАМИ
+      (x86_64 Windows/Linux, release fat-LTO; live: «0.9.3 → v0.9.4»).
+- [x] бенчи (4670ec8): Criterion udp_wire — hy2/tuic pack/unpack
+      (целый+фрагменты) 46–268 ns, vless len16 45 ns.
 - [x] MCP (66fb88b): `lavray-core mcp` — JSON-RPC over stdio
       (initialize/ping/tools), инструменты profiles_list/profile_get/
       version/updates_check против store; unit 5 + live smoke.
