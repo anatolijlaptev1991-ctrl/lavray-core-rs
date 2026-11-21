@@ -61,6 +61,14 @@ async fn trojan_wrong_password_rejected() {
     c.write_all(b"x").await.unwrap();
     let mut buf = [0u8; 8];
     let r = tokio::time::timeout(std::time::Duration::from_secs(3), c.read(&mut buf)).await;
-    let n = r.expect("без вечного ожидания").unwrap();
+    // «Рвёт соединение» — это EOF ИЛИ ConnectionReset: сервер дропает
+    // сокет с непрочитанными данными → на macOS клиенту прилетает RST
+    // (в отличие от Linux/Windows, где read чисто вернёт 0) — зависит
+    // от тайминга закрытия, оба исхода означают «данных нет».
+    let n = match r.expect("без вечного ожидания") {
+        Ok(n) => n,
+        Err(e) if e.kind() == std::io::ErrorKind::ConnectionReset => 0,
+        Err(e) => panic!("read: {e}"),
+    };
     assert_eq!(n, 0, "сервер рвёт соединение при неверном пароле");
 }
