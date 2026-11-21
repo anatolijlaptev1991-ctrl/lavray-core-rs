@@ -104,10 +104,10 @@ fn golden_byte_identical() {
         // любом хосте (darwin меняет tun-name и процессные правила).
         // Явный goos в fixture (G28/G29) не трогаем.
         let mut settings = in_.settings;
-        if let Some(st) = settings.as_mut() {
-            if st.goos.is_empty() {
-                st.goos = "linux".into();
-            }
+        if let Some(st) = settings.as_mut()
+            && st.goos.is_empty()
+        {
+            st.goos = "linux".into();
         }
         let res = build(BuildRequest {
             profile: &in_.profile,
