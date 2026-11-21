@@ -100,3 +100,50 @@ jobs:
         run: |
           set -euo pipefail
           python scripts/size_ratchet.py
+
+  # Чистый Rust = собирается везде: тот же quality (fmt+clippy+tests)
+  # на macOS (Darwin) — гейт платформенной переносимости движка.
+  quality-macos:
+    name: "fmt + clippy + tests (macOS)"
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - name: "protoc"
+        run: brew install protobuf
+      - name: "fmt"
+        run: cargo fmt --check
+      - name: "clippy pedantic + perf (ноль предупреждений)"
+        run: cargo clippy --all-targets --locked -- -D warnings
+      - name: "tests"
+        run: cargo test --workspace --locked
+
+  # Кросс-таргеты релиза: aarch64-linux (роутеры/ARM) и статический
+  # musl — компиляция до тегов, чтобы релиз не падал на сюрпризах.
+  cross:
+    name: "cross: ${{ matrix.target }}"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [aarch64-unknown-linux-gnu, x86_64-unknown-linux-musl]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - name: "protoc + cross-тулчейны"
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends protobuf-compiler gcc-aarch64-linux-gnu musl-tools
+      - name: "cargo check (release-профиль)"
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: cargo check --release --locked -p lavray-core --target ${{ matrix.target }}

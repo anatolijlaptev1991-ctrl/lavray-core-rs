@@ -202,6 +202,17 @@ Rust-клиент → Go-сервер → TCP-echo, оба протокола З
   response — точное побайтовое чтение (read_tcp_response_exact);
 - hy2.rs разбит (ratchet): wire в hy2.rs, коннект в hy2_conn.rs.
 
+## Кросс-платформенный релиз (21.11, v0.9.5)
+
+Чистый Rust = одни исходники на всех платформах, где возможна сборка:
+- cfg-гейты Linux-only кода (`redirect_inbound`, `socket2`-деп, lavray-sys)
+  — workspace компилируется и проходит тесты на macOS (Darwin);
+- CI: job `quality-macos` (fmt+clippy+tests) + `cross` (cargo check
+  aarch64-unknown-linux-gnu и x86_64-unknown-linux-musl) — до релиза;
+- release-workflow на тег v*: матрица 7 таргетов (windows x64/arm64,
+  linux x64/arm64/x64-musl, macos arm64/x64), fat-LTO + strip, sha256,
+  авто-загрузка ассетов на GitHub Release.
+
 ## Критерии готовности ядра
 
 - Все сервисы API реализованы и покрыты тестами (паритет proto).

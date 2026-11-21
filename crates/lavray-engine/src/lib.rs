@@ -24,6 +24,7 @@ pub mod nftables;
 pub mod profile_outbound;
 pub mod quic_tls;
 pub mod reality;
+#[cfg(target_os = "linux")]
 pub mod redirect_inbound;
 pub mod relay;
 pub mod relay_netstack;

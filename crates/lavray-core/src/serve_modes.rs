@@ -64,6 +64,8 @@ pub fn spawn_modes(
         eprintln!("lavray-core: gateway udp tproxy on {listen}");
     }
     if let Some(name) = &modes.tun {
+        #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+        eprintln!("lavray-core: --tun {name}: платформа без TUN-поддержки (linux/windows)");
         #[cfg(any(target_os = "linux", target_os = "windows"))]
         {
             let tun_dev = match lavray_engine::tun_device::TunDevice::open(name) {

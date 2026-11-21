@@ -16,6 +16,8 @@ authors.workspace = true
 [target.'cfg(target_os = "linux")'.dependencies]
 tun = { package = "tun", version = "0.6", default-features = false, features = ["async"] }
 lavray-sys = { path = "../lavray-sys" }
+# redirect-inbound/udp-tproxy (Linux): IP_TRANSPARENT + SO_ORIGINAL_DST.
+socket2 = { version = "0.5", features = ["all"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 # wintun-платформа tun-rs: создание адаптера требует wintun.dll рядом
@@ -37,7 +39,6 @@ rustls = { workspace = true }
 tokio-rustls = { workspace = true }
 quinn = { workspace = true }
 smoltcp = { workspace = true }
-socket2 = { version = "0.5", features = ["all"] }
 rcgen = { workspace = true }
 webpki-roots = { workspace = true }
 aes = { workspace = true }

@@ -1,0 +1,113 @@
+# Release LAVRay Core: чистый Rust на всех платформах, где возможен.
+# Триггер — тег v*. Матрица собирает release-бинарники (fat LTO,
+# codegen-units=1, strip) и прикладывает их к GitHub Release.
+# Кросс-таргеты (aarch64-linux, musl, windows-arm64) собираются
+# кросс-компиляцией на соответствующих раннерах; windows-arm64 —
+# best-effort (continue-on-error), релиз не блокирует.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: "build ${{ matrix.name }}"
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows-x64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            ext: .exe
+          - name: windows-arm64
+            os: windows-latest
+            target: aarch64-pc-windows-msvc
+            ext: .exe
+            soft: true
+          - name: linux-x64
+            os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+          - name: linux-arm64
+            os: ubuntu-24.04
+            target: aarch64-unknown-linux-gnu
+          - name: linux-x64-musl
+            os: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+          - name: macos-arm64
+            os: macos-latest
+            target: aarch64-apple-darwin
+          - name: macos-x64
+            os: macos-latest
+            target: x86_64-apple-darwin
+    continue-on-error: ${{ matrix.soft || false }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: "protoc (linux)"
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends protobuf-compiler gcc-aarch64-linux-gnu musl-tools
+
+      - name: "protoc (macos)"
+        if: runner.os == 'macOS'
+        run: brew install protobuf
+
+      - name: "protoc (windows)"
+        if: runner.os == 'Windows'
+        run: choco install -y protoc
+
+      - name: "build (release, fat LTO)"
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: cargo build --release --locked -p lavray-core --target ${{ matrix.target }}
+
+      - name: "artifact"
+        shell: bash
+        run: |
+          set -euo pipefail
+          src="target/${{ matrix.target }}/release/lavray-core${{ matrix.ext || '' }}"
+          dst="lavray-core-${{ matrix.name }}${{ matrix.ext || '' }}"
+          cp "$src" "$dst"
+          sha256sum "$dst" > "$dst.sha256"
+          ls -la lavray-core-*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lavray-core-${{ matrix.name }}
+          path: lavray-core-${{ matrix.name }}*
+
+  release:
+    name: "github release"
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: "upload assets"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ls -la dist/
+          gh release upload "${GITHUB_REF_NAME}" dist/* --clobber
+          gh release view "${GITHUB_REF_NAME}" --json assets -q '.assets[].name'
