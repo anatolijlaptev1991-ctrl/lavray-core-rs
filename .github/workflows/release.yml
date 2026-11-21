@@ -109,6 +109,8 @@ jobs:
       - name: "upload assets"
         env:
           GH_TOKEN: ${{ github.token }}
+          # без checkout gh не может определить репо через git.
+          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
           ls -la dist/
