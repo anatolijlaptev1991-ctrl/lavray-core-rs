@@ -61,7 +61,10 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends protobuf-compiler gcc-aarch64-linux-gnu musl-tools
+          # libc6-dev-arm64-cross — заголовки цели (Recommends у кросс-gcc,
+          # без них ring падает на bits/libc-header-start.h).
+          sudo apt-get install -y --no-install-recommends protobuf-compiler \
+            gcc-aarch64-linux-gnu libc6-dev-arm64-cross musl-tools
 
       - name: "protoc (macos)"
         if: runner.os == 'macOS'

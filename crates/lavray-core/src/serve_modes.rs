@@ -22,6 +22,10 @@ pub fn spawn_modes(
     outbound: &Arc<lavray_engine::Outbound>,
     shutdown_rx: &tokio::sync::watch::Receiver<bool>,
 ) {
+    // macOS/прочие Unix: все режимы linux/windows-only — параметры
+    // израсходованы, чтобы не было unused (clippy -D warnings).
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    let _ = (&outbound, shutdown_rx);
     #[cfg(target_os = "linux")]
     if let Some(listen) = &modes.gateway {
         let cfg = lavray_engine::redirect_inbound::RedirectConfig {
