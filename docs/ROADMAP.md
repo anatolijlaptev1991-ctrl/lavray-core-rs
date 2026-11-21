@@ -213,6 +213,11 @@ Rust-клиент → Go-сервер → TCP-echo, оба протокола З
   linux x64/arm64/x64-musl, macos arm64/x64), fat-LTO + strip, sha256,
   авто-загрузка ассетов на GitHub Release.
 
+Выполнено (тег v0.9.5): 7/7 сборок + upload автоматически; верификация
+ассета windows-x64: sha256 OK, `updates check --json` → current 0.9.5 ==
+latest v0.9.5 (CURRENT_VERSION теперь из CARGO_PKG_VERSION). Тесты:
+478 Linux / 477 Windows / macOS зелёные (CI 211d766).
+
 ## Критерии готовности ядра
 
 - Все сервисы API реализованы и покрыты тестами (паритет proto).
