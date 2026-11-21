@@ -109,5 +109,7 @@ jobs:
         run: |
           set -euo pipefail
           ls -la dist/
+          # тег сам релиз не создаёт: создаём (если ещё нет), затем upload.
+          gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" --generate-notes || true
           gh release upload "${GITHUB_REF_NAME}" dist/* --clobber
           gh release view "${GITHUB_REF_NAME}" --json assets -q '.assets[].name'
