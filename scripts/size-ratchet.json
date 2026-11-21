@@ -69,7 +69,7 @@
   "crates/lavray-core/src/serve.rs": 162,
   "crates/lavray-core/src/serve_modes.rs": 138,
   "crates/lavray-core/src/updates.rs": 64,
-  "crates/lavray-core/tests/cli.rs": 166,
+  "crates/lavray-core/tests/cli.rs": 185,
   "crates/lavray-dns/src/cidr.rs": 57,
   "crates/lavray-dns/src/doh_client.rs": 129,
   "crates/lavray-dns/src/dot_client.rs": 70,

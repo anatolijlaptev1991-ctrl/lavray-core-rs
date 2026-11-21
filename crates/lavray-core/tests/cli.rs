@@ -51,11 +51,25 @@ fn free_port() -> u16 {
 /// дождаться LAVRAY_CORE_READY; возвращает (child-гард, gRPC-адрес).
 #[allow(clippy::zombie_processes)] // гард ChildPipe::drop делает kill+wait
 fn launch(agent_token: Option<&str>) -> (ChildPipe, String, u16) {
+    // Эфемерные порты — TOCTOU: на нагруженных раннерах (4 параллельных
+    // теста, 3 ядра macOS) ОС может выдать один порт дважды → EADDRINUSE
+    // → ядро умирает до READY. Ретраи с новыми портами/каталогами.
+    for _ in 0..3 {
+        if let Some(r) = launch_once(agent_token) {
+            return r;
+        }
+    }
+    panic!("serve не поднялся за 3 попытки (порт-гонки эфемерных портов)");
+}
+
+fn launch_once(agent_token: Option<&str>) -> Option<(ChildPipe, String, u16)> {
     let port = free_port();
+    // Разные порты gRPC и mixed: защита от одинакового эфемерного порта.
+    let mut inbound_port = free_port();
+    while inbound_port == port {
+        inbound_port = free_port();
+    }
     let dir = temp_dir("serve");
-    // Порт инбаунда задаём в БД заранее: дефолт 2080 может быть занят
-    // живым экземпляром на машине разработчика.
-    let inbound_port = free_port();
     {
         let store = Store::open(&dir.join("lavray.db")).unwrap();
         store
@@ -108,20 +122,25 @@ fn launch(agent_token: Option<&str>) -> (ChildPipe, String, u16) {
     });
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(15);
     loop {
-        assert!(
-            child.try_wait().expect("try_wait").is_none(),
-            "lavray-core умер до LAVRAY_CORE_READY"
-        );
+        if child.try_wait().expect("try_wait").is_some() {
+            eprintln!("lavray-core умер до LAVRAY_CORE_READY (порт-гонка?), ретрай");
+            drop(ChildPipe(child));
+            return None;
+        }
         let left = deadline.saturating_duration_since(std::time::Instant::now());
-        assert!(!left.is_zero(), "LAVRAY_CORE_READY не получен за 15 с");
+        if left.is_zero() {
+            eprintln!("LAVRAY_CORE_READY не получен за 15 с, ретрай");
+            drop(ChildPipe(child));
+            return None;
+        }
         if let Ok(line) = rx.recv_timeout(left.min(std::time::Duration::from_millis(300)))
             && line.trim() == "LAVRAY_CORE_READY"
         {
-            return (
+            return Some((
                 ChildPipe(child),
                 format!("http://127.0.0.1:{port}"),
                 inbound_port,
-            );
+            ));
         }
     }
 }
