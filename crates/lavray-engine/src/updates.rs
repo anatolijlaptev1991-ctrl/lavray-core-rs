@@ -7,8 +7,8 @@
 
 use serde_json::Value;
 
-/// Текущая версия ядра (workspace 0.9.3).
-pub const CURRENT_VERSION: &str = "0.9.3";
+/// Текущая версия ядра — из манифеста workspace (единый источник версии).
+pub const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Репозиторий проекта по умолчанию.
 pub const DEFAULT_REPO: &str = "anatolijlaptev1991-ctrl/lavray-core-rs";

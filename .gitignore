@@ -12,3 +12,6 @@ etalon/live/qlog/
 etalon/live/qlog_rep/
 etalon/goclient/
 wintun.dll
+
+# локальные артефакты релиза (gh run download)
+dist-rel/
