@@ -53,7 +53,7 @@
   "crates/lavray-cfgbuild/src/stream.rs": 191,
   "crates/lavray-cfgbuild/src/util.rs": 78,
   "crates/lavray-cfgbuild/src/validate.rs": 79,
-  "crates/lavray-cfgbuild/tests/golden.rs": 136,
+  "crates/lavray-cfgbuild/tests/golden.rs": 146,
   "crates/lavray-cfgbuild/tests/merge_allowlist.rs": 126,
   "crates/lavray-cfgbuild/tests/security.rs": 97,
   "crates/lavray-cfgbuild/tests/units.rs": 144,
@@ -67,7 +67,7 @@
   "crates/lavray-core/src/outbound_select.rs": 88,
   "crates/lavray-core/src/ruleset.rs": 177,
   "crates/lavray-core/src/serve.rs": 162,
-  "crates/lavray-core/src/serve_modes.rs": 134,
+  "crates/lavray-core/src/serve_modes.rs": 138,
   "crates/lavray-core/src/updates.rs": 64,
   "crates/lavray-core/tests/cli.rs": 166,
   "crates/lavray-dns/src/cidr.rs": 57,
@@ -295,5 +295,5 @@
   "crates/lavray-store/tests/audit_regressions.rs": 185,
   "crates/lavray-store/tests/profile_crud.rs": 166,
   "crates/lavray-store/tests/store.rs": 151,
-  "crates/lavray-sys/src/lib.rs": 168
+  "crates/lavray-sys/src/lib.rs": 171
 }

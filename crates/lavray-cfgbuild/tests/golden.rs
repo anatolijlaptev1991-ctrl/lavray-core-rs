@@ -99,10 +99,20 @@ fn golden_byte_identical() {
                 lavray_cfgbuild::Error::precondition("chain", format!("chain missing ent: {id}"))
             })
         };
+        // Goldens записаны на linux/windows (goos-вывод идентичен); пустой
+        // goos пиним на "linux", чтобы векторы были детерминированы на
+        // любом хосте (darwin меняет tun-name и процессные правила).
+        // Явный goos в fixture (G28/G29) не трогаем.
+        let mut settings = in_.settings;
+        if let Some(st) = settings.as_mut() {
+            if st.goos.is_empty() {
+                st.goos = "linux".into();
+            }
+        }
         let res = build(BuildRequest {
             profile: &in_.profile,
             group: in_.group.as_ref(),
-            settings: in_.settings.as_ref(),
+            settings: settings.as_ref(),
             lookup: Some(&lookup),
             preset: preset.as_ref(),
             for_test: in_.for_test,
