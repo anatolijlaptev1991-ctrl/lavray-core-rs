@@ -170,7 +170,7 @@
   "crates/lavray-engine/tests/po.rs": 53,
   "crates/lavray-engine/tests/reality_live.rs": 109,
   "crates/lavray-engine/tests/ss_e2e.rs": 102,
-  "crates/lavray-engine/tests/trojan_e2e.rs": 66,
+  "crates/lavray-engine/tests/trojan_e2e.rs": 74,
   "crates/lavray-engine/tests/tuic.rs": 51,
   "crates/lavray-engine/tests/tuic_hy2_live.rs": 123,
   "crates/lavray-engine/tests/tun.rs": 90,
