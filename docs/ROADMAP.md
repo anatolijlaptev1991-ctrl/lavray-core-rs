@@ -218,6 +218,22 @@ Rust-клиент → Go-сервер → TCP-echo, оба протокола З
 latest v0.9.5 (CURRENT_VERSION теперь из CARGO_PKG_VERSION). Тесты:
 478 Linux / 477 Windows / macOS зелёные (CI 211d766).
 
+### Самодостаточность Windows/Linux (v0.9.6)
+
+Проверка фактической линковки ассетов v0.9.5 (readelf / PE-импорты)
+выявила два пробела — закрыты:
+- Linux: `linux-arm64` — glibc, на OpenWrt/Alpine (musl) не запускался.
+  Добавлены **static** musl-таргеты `linux-arm64-musl` и
+  `linux-armv7-musl` (32-битные роутеры) через cargo-zigbuild 0.24.1 +
+  zig 0.17.1 (пины в workflow); `linux-x64-musl` — static-pie, 0 NEEDED.
+  CI-гейт `cross-zig` собирает оба и требует 0 динамических зависимостей.
+- Windows: импортировался `VCRUNTIME140.dll` → `+crt-static` (RUSTFLAGS
+  в release.yml): в импортах остаются только системные DLL. Для TUN-режима
+  к релизу приложены `wintun-x64.dll` / `wintun-arm64.dll` (0.14.1 +
+  LICENSE; положить рядом с бинарнем как `wintun.dll`).
+- `linux-x64` (gnu) остаётся динамическим (glibc хоста сборки) — для
+  старых дистрибутивов предназначен musl.
+
 ## Критерии готовности ядра
 
 - Все сервисы API реализованы и покрыты тестами (паритет proto).

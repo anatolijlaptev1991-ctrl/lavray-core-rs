@@ -1,9 +1,13 @@
 # Release LAVRay Core: чистый Rust на всех платформах, где возможен.
 # Триггер — тег v*. Матрица собирает release-бинарники (fat LTO,
 # codegen-units=1, strip) и прикладывает их к GitHub Release.
-# Кросс-таргеты (aarch64-linux, musl, windows-arm64) собираются
-# кросс-компиляцией на соответствующих раннерах; windows-arm64 —
-# best-effort (continue-on-error), релиз не блокирует.
+#
+# Самодостаточность сборок:
+#   Windows  — статический CRT (+crt-static): без VCRUNTIME140.dll;
+#              wintun.dll (x64/arm64) приложена отдельно для TUN-режима.
+#   Linux    — gnu-таргеты динамические (glibc хоста сборки);
+#              musl-таргеты (x86_64/aarch64/armv7) — static-pie через
+#              cargo-zigbuild: запускаются на OpenWrt/Alpine/старых дистрибутивах.
 
 name: Release
 
@@ -14,6 +18,12 @@ on:
 
 permissions:
   contents: write
+
+env:
+  # Пины кросс-тулчейна (проверены локально): zig мульти-таргет.
+  ZIGBUILD_VERSION: "0.24.1"
+  ZIG_VERSION: "0.17.1"
+  WINTUN_VERSION: "0.14.1"
 
 jobs:
   build:
@@ -32,7 +42,7 @@ jobs:
             os: windows-latest
             target: aarch64-pc-windows-msvc
             ext: .exe
-            soft: true
+            soft: true # кросс-цель: не блокирует релиз
           - name: linux-x64
             os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
@@ -42,6 +52,14 @@ jobs:
           - name: linux-x64-musl
             os: ubuntu-24.04
             target: x86_64-unknown-linux-musl
+          - name: linux-arm64-musl
+            os: ubuntu-24.04
+            target: aarch64-unknown-linux-musl
+            zig: true
+          - name: linux-armv7-musl
+            os: ubuntu-24.04
+            target: armv7-unknown-linux-musleabihf
+            zig: true
           - name: macos-arm64
             os: macos-latest
             target: aarch64-apple-darwin
@@ -74,10 +92,31 @@ jobs:
         if: runner.os == 'Windows'
         run: choco install -y protoc
 
+      # cargo-zigbuild + zig: статические musl-кросс-таргеты без sysroot.
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        if: matrix.zig
+        with:
+          python-version: "3.12"
+      - name: "cargo-zigbuild + zig"
+        if: matrix.zig
+        run: |
+          set -euo pipefail
+          pip install "cargo-zigbuild==$ZIGBUILD_VERSION" "ziglang==$ZIG_VERSION"
+          cargo-zigbuild --version
+          python -m ziglang version
+
       - name: "build (release, fat LTO)"
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
-        run: cargo build --release --locked -p lavray-core --target ${{ matrix.target }}
+          # Windows: статический CRT — бинарник без VCRUNTIME140.dll.
+          RUSTFLAGS: ${{ runner.os == 'Windows' && '-C target-feature=+crt-static' || '' }}
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.zig || 'false' }}" = "true" ]; then
+            cargo zigbuild --release --locked -p lavray-core --target ${{ matrix.target }}
+          else
+            cargo build --release --locked -p lavray-core --target ${{ matrix.target }}
+          fi
 
       - name: "artifact"
         shell: bash
@@ -94,9 +133,33 @@ jobs:
           name: lavray-core-${{ matrix.name }}
           path: lavray-core-${{ matrix.name }}*
 
+  # wintun.dll для TUN-режима Windows (драйвер грузится в рантайме по
+  # имени wintun.dll рядом с бинарём; здесь — обе архитектуры + лицензия).
+  wintun:
+    name: "wintun.dll (x64 + arm64)"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: "download + unpack"
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          curl -sSL -o wintun.zip "https://www.wintun.net/builds/wintun-$WINTUN_VERSION.zip"
+          unzip -j wintun.zip "wintun/bin/amd64/wintun.dll" -d dist/amd64
+          unzip -j wintun.zip "wintun/bin/arm64/wintun.dll" -d dist/arm64
+          unzip -j wintun.zip "wintun/LICENSE.txt" -d dist
+          mv dist/amd64/wintun.dll dist/wintun-x64.dll
+          mv dist/arm64/wintun.dll dist/wintun-arm64.dll
+          cd dist && sha256sum wintun-x64.dll wintun-arm64.dll > wintun.sha256
+          ls -la
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lavray-core-wintun
+          path: dist/*
+
   release:
     name: "github release"
-    needs: build
+    needs: [build, wintun]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     if: startsWith(github.ref, 'refs/tags/v')
@@ -105,7 +168,6 @@ jobs:
         with:
           path: dist
           merge-multiple: true
-
       - name: "upload assets"
         env:
           GH_TOKEN: ${{ github.token }}

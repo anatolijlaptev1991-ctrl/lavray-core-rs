@@ -150,3 +150,43 @@ jobs:
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
         run: cargo check --release --locked -p lavray-core --target ${{ matrix.target }}
+
+  # Статические musl-кросс-таргеты роутеров (OpenWrt/Alpine: aarch64,
+  # armv7) — через cargo-zigbuild: полный линк с C-кодом (ring, sqlite),
+  # чтобы релиз не падал на сюрпризах. Версии запинены = release.yml.
+  cross-zig:
+    name: "cross-zig: ${{ matrix.target }}"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      ZIGBUILD_VERSION: "0.24.1"
+      ZIG_VERSION: "0.17.1"
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [aarch64-unknown-linux-musl, armv7-unknown-linux-musleabihf]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: "protoc"
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends protobuf-compiler
+      - name: "cargo-zigbuild + zig"
+        run: pip install "cargo-zigbuild==$ZIGBUILD_VERSION" "ziglang==$ZIG_VERSION"
+      - name: "zigbuild (dev-профиль, полный линк)"
+        run: cargo zigbuild --locked -p lavray-core --target ${{ matrix.target }}
+      - name: "статическая линковка"
+        run: |
+          set -euo pipefail
+          f="target/${{ matrix.target }}/debug/lavray-core"
+          file "$f"
+          test "$(readelf -d "$f" | grep -c NEEDED)" = "0"
+          echo "OK: 0 динамических зависимостей"
