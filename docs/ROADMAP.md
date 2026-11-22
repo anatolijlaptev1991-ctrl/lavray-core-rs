@@ -231,8 +231,22 @@ latest v0.9.5 (CURRENT_VERSION теперь из CARGO_PKG_VERSION). Тесты:
   в release.yml): в импортах остаются только системные DLL. Для TUN-режима
   к релизу приложены `wintun-x64.dll` / `wintun-arm64.dll` (0.14.1 +
   LICENSE; положить рядом с бинарнем как `wintun.dll`).
-- `linux-x64` (gnu) остаётся динамическим (glibc хоста сборки) — для
-  старых дистрибутивов предназначен musl.
+- gnu-таргеты (`linux-x64`, `linux-arm64`) остаются динамическими: по
+  версиям символов требуют glibc ≥ 2.34 (readelf -V); для более старых
+  систем и musl-дистрибутивов — сборки с суффиксом `-musl`.
+
+Верификация ассетов v0.9.6 (тег 5fc72c2, 11/11 джобов release, 22 ассета):
+- sha256 всех 9 бинарников и wintun — OK; разрядность каждого — по заголовку
+  ELF/PE; musl-сборки — statically linked, 0 NEEDED; Windows — нет импорта
+  `VCRUNTIME140.dll` и `api-ms-win-crt-*` (только системные DLL).
+- Запуск «из коробки» как прокси (serve → SOCKS5 и HTTP CONNECT → 200 от
+  example.com/google.com; gRPC-порт принимает соединения): `windows-x64`
+  на Windows x64, `linux-x64-musl` и `linux-x64` на Ubuntu x86_64.
+- НЕ запускались (нет оборудования): `windows-arm64`, `linux-arm64`,
+  `linux-arm64-musl`, `linux-armv7-musl`, macOS — проверены только сборка,
+  разрядность и линковка. TUN-режим на релизных бинарниках не запускался.
+- wintun-x64.dll sha256 `e5da8447…` — тот же файл, что проходил
+  elevated-валидацию (tun_wintun_open_and_io).
 
 ## Критерии готовности ядра
 
