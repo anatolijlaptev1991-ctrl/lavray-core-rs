@@ -110,6 +110,8 @@ jobs:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
           # Windows: статический CRT — бинарник без VCRUNTIME140.dll.
           RUSTFLAGS: ${{ runner.os == 'Windows' && '-C target-feature=+crt-static' || '' }}
+        # на windows-latest оболочка по умолчанию PowerShell — нужен bash.
+        shell: bash
         run: |
           set -euo pipefail
           if [ "${{ matrix.zig || 'false' }}" = "true" ]; then
@@ -148,8 +150,10 @@ jobs:
           unzip -j wintun.zip "wintun/bin/amd64/wintun.dll" -d dist/amd64
           unzip -j wintun.zip "wintun/bin/arm64/wintun.dll" -d dist/arm64
           unzip -j wintun.zip "wintun/LICENSE.txt" -d dist
+          mv dist/LICENSE.txt dist/wintun-LICENSE.txt
           mv dist/amd64/wintun.dll dist/wintun-x64.dll
           mv dist/arm64/wintun.dll dist/wintun-arm64.dll
+          rmdir dist/amd64 dist/arm64
           cd dist && sha256sum wintun-x64.dll wintun-arm64.dll > wintun.sha256
           ls -la
       - uses: actions/upload-artifact@v4
