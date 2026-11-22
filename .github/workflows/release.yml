@@ -130,7 +130,7 @@ jobs:
           sha256sum "$dst" > "$dst.sha256"
           ls -la lavray-core-*
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: lavray-core-${{ matrix.name }}
           path: lavray-core-${{ matrix.name }}*
@@ -156,7 +156,7 @@ jobs:
           rmdir dist/amd64 dist/arm64
           cd dist && sha256sum wintun-x64.dll wintun-arm64.dll > wintun.sha256
           ls -la
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: lavray-core-wintun
           path: dist/*
